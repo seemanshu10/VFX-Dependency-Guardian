@@ -1,0 +1,302 @@
+For your Junior–Mid VFX Software/Pipeline Developer portfolio, I recommend building the Package Dependency Validator version, not the larger Render/Provenance system.
+
+It gives you a better 68-hour project while still demonstrating strong engineering skills.
+
+Recommended Project
+VFX Dependency Guardian — Package Dependency Validation System
+
+The tool answers one practical production question:
+
+"Is this published asset/package using the correct, approved versions of all its dependencies?"
+
+Core workflow
+Published Package
+       ↓
+Read Package JSON
+       ↓
+Discover Dependencies
+       ↓
+Read Master Version Registry
+       ↓
+Compare Versions + Status
+       ↓
+Validate
+       ↓
+┌──────────┬──────────┬──────────┬──────────┐
+│   OK     │ OUTDATED │ MISSING  │ INVALID  │
+└──────────┴──────────┴──────────┴──────────┘
+       ↓
+Detailed Validation Report
+       ↓
+Optional User-Confirmed Update
+Example
+character_A
+
+model    v002 → v008    OUTDATED
+rig      v001 → v004    OUTDATED
+texture  v005           OK
+groom    missing        MISSING
+
+Validation: FAILED
+
+The tool should tell the artist/TD exactly what is wrong and what version is expected.
+
+What I'd build
+1. Package JSON
+
+Stores what the package currently references.
+
+{
+    "asset": "character_A",
+    "components": {
+        "model": "v002",
+        "rig": "v001",
+        "texture": "v005",
+        "groom": "v001"
+    }
+}
+2. Master Registry
+
+Your source of approved truth.
+
+{
+    "character_A": {
+        "model": {
+            "version": "v008",
+            "status": "APPROVED"
+        },
+        "rig": {
+            "version": "v004",
+            "status": "APPROVED"
+        },
+        "texture": {
+            "version": "v005",
+            "status": "APPROVED"
+        },
+        "groom": {
+            "version": "v002",
+            "status": "WIP"
+        }
+    }
+}
+3. Validator
+
+This is the heart of the project.
+
+It determines:
+
+MATCH       → OK
+OLDER       → OUTDATED
+MISSING     → MISSING
+BROKEN      → INVALID
+DEPRECATED  → INVALID
+WIP         → INVALID / WARNING
+FUTURE      → INVALID
+4. Update mechanism
+
+Don't make automatic "Update All" the default.
+
+Instead:
+
+guardian check character_A
+
+shows:
+
+OUTDATED COMPONENTS
+
+model   v002 → v008
+rig     v001 → v004
+
+Then:
+
+guardian update character_A
+
+updates the package only after explicit confirmation.
+
+This demonstrates that you understand production safety.
+
+Engineering skills this showcases
+
+This is where the project becomes valuable for your resume/interview.
+
+Python
+pathlib
+JSON
+dataclasses
+typing
+exception handling
+logging
+CLI
+modular architecture
+Software Engineering
+
+You'll demonstrate:
+
+separation of concerns
+validation architecture
+deterministic business logic
+configuration
+error handling
+edge-case handling
+testability
+maintainable project structure
+Pipeline Engineering
+
+You'll demonstrate understanding of:
+
+asset dependencies
+published packages
+version management
+approved vs WIP vs broken assets
+stale dependencies
+package consistency
+production-safe updates
+filesystem-based pipelines
+Testing
+
+Use pytest heavily around the validator.
+
+For example:
+
+test_matching_versions()
+test_outdated_version()
+test_missing_dependency()
+test_broken_dependency()
+test_deprecated_dependency()
+test_wip_dependency()
+test_future_version()
+test_unknown_asset()
+test_unknown_component()
+test_malformed_json()
+
+This is much more impressive in an interview than simply having a GUI.
+
+What I would NOT build in this MVP
+
+Don't spend your 68 hours on:
+
+❌ SQLite
+❌ PostgreSQL
+❌ Render Simulator
+❌ Render Provenance
+❌ Deadline
+❌ Render Farm
+❌ Docker
+❌ Redis
+❌ REST API
+❌ Multiple DCC integrations
+❌ AI
+❌ Complex GUI
+
+I'd also delay PySide6 until the CLI and core validator are finished.
+
+If you have time at the end, create a small PySide6 interface on top of the existing logic.
+
+Portfolio architecture
+
+Something like:
+
+vfx_dependency_guardian/
+│
+├── guardian/
+│   ├── models.py
+│   ├── scanner.py
+│   ├── resolver.py
+│   ├── validator.py
+│   ├── updater.py
+│   ├── registry.py
+│   └── logger.py
+│
+├── data/
+│   ├── registry.json
+│   └── packages/
+│
+├── projects/
+│   └── demo_project/
+│       └── assets/
+│
+├── cli/
+│   └── main.py
+│
+├── tests/
+│   ├── test_scanner.py
+│   ├── test_resolver.py
+│   ├── test_validator.py
+│   └── test_updater.py
+│
+├── config/
+│   └── config.json
+│
+└── README.md
+
+The exact structure can evolve once we design the domain model.
+
+Why I recommend this over the original idea
+
+Your original concept was:
+
+Dependency Validation
++
+Locking
++
+Manifest
++
+Render
++
+Provenance
+
+That's a larger pipeline system.
+
+Your refined concept is:
+
+Dependency Discovery
++
+Version Resolution
++
+Validation
++
+Reporting
++
+Controlled Update
+
+This is much more achievable in ~68 hours, while still allowing you to demonstrate serious engineering.
+
+And there's a natural Phase 2:
+
+PHASE 1
+Package Dependency Validator
+        ↓
+PHASE 2
+Dependency Locking / Immutable Manifest
+        ↓
+PHASE 3
+Render Provenance
+        ↓
+PHASE 4
+DCC / Farm Integration
+
+You can therefore say in your interview:
+
+"I deliberately scoped the first version around dependency validation and version consistency. I designed the core so that dependency locking and render provenance could be added later without changing the validation engine."
+
+That's a much stronger engineering story than trying to build everything and ending up with half-working features.
+
+My final recommendation
+
+Build this:
+
+🟢 VFX Dependency Guardian — Asset/Package Dependency Version Validator
+
+Focus your effort roughly like this:
+
+40%  Core validation + version resolution
+20%  Data model + filesystem/JSON architecture
+15%  pytest + edge cases
+10%  CLI
+10%  Documentation + demo scenarios
+ 5%  PySide6 GUI (only if time remains)
+
+The validator is the product.
+The CLI/GUI are just interfaces to it.
+
+That will showcase your Python + Pipeline + Software Engineering skills far better than a flashy UI or an over-engineered database.
