@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "asset": "character_B",
+  "package_version": "v007",
+  "published": "2026-02-21T09:48:00+00:00",
+  "author": "pverma",
+  "components": {
+    "model": "v003",
+    "rig": "v002",
+    "texture": "v004",
+    "cache": "v002",
+    "groom": "v001"
+  }
+}
