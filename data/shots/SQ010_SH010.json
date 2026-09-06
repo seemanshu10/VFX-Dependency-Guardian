@@ -1,12 +1,41 @@
 {
-  "schema_version": 1,
   "shot": "SQ010_SH010",
   "sequence": "SQ010",
   "name": "SH010",
-  "assembled": "2026-03-02T08:30:00+00:00",
-  "author": "pverma",
+  "build": "2026-03-02T08:30:00+00:00",
+  "author": "T.Hanks",
   "packages": {
-    "character_B": "v008",
-    "env_alley": "v003"
+    "character_A": {
+      "model": "v002",
+      "rig": "v002",
+      "groom": "v002",
+      "texture": "v001",
+      "shader": "v002",
+      "blendshape": "v001",
+      "cloth": "v001",
+      "anim": "v002",
+      "cache": "v003"
+    },
+    "character_B": {
+      "model": "v001",
+      "rig": "v003",
+      "groom": "v002",
+      "texture": "v001",
+      "shader": "v002",
+      "blendshape": "v001",
+      "cloth": "v001",
+      "anim": "v002",
+      "cache": "v002"
+    },
+    "env_alley": {
+      "model": "v003",
+      "rig": "v001",
+      "texture": "v001",
+      "shader": "v001",
+      "lookdev": "v002",
+      "layout": "v002",
+      "scatter": "v001",
+      "proxy": "v001"
+    }
   }
 }
