@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset": "env_alley",
+  "package_version": "v002",
+  "published": "2026-02-17T10:00:00+00:00",
+  "author": "l.novak",
+  "components": {
+    "model": "v001",
+    "texture": "v001"
+  }
+}

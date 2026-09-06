@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "shot": "SQ010_SH010",
+  "sequence": "SQ010",
+  "name": "SH010",
+  "assembled": "2026-03-02T08:30:00+00:00",
+  "author": "pverma",
+  "packages": {
+    "character_B": "v008",
+    "env_alley": "v003"
+  }
+}
