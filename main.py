@@ -27,6 +27,15 @@ except FileNotFoundError:
 except json.JSONDecodeError as e:
     print(f"Json decode error: {e} ")
 
+def json_data_loads(json_file_type):
+    
+    json_extension = "{0}.json".format(json_file_type)
+    print(json_extension)
+    for dirpath, dirnames, filenames in os.walk(project_file_dir):
+            if json_extension in filenames:
+                path = os.path.join(dirpath, json_extension)
+                print(path)
+
 def character_package_version(type) -> None:
     versions = char_data["components"][type]["versions"]
     last_version_status = list(versions.values())[-1]
@@ -43,9 +52,8 @@ def shot_type_version(asset_name, asset_type):
 if __name__ == "__main__":
     character_package_version("rig")
     shot_type_version("character_A", "rig")
-    root = Path(__file__).parent
-    for path in root.rglob("character_B.json"):
-        print(path)
+    json_data_loads("character_B")
+    
 
 
     
