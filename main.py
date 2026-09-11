@@ -4,7 +4,6 @@ from pathlib import Path
 
 project_file_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
-
 def load_json(path: Path) -> dict:
     """Load and parse a single JSON file. Raises on missing file or bad JSON,
     with a clear message identifying which file failed."""
@@ -39,22 +38,25 @@ def shot_type_version(char_shot, asset_name, asset_type):
     versions = char_shot["packages"][asset_name][asset_type]
     print(versions)
 
-def packages_data_extract(asset_type = "All"):
+def packages_data_extract(data_extracted):
     
-    data = load_json()
-    pass
+    packages = data_extracted["packages"]
+    print(packages)
+    return packages
 
 if __name__ == "__main__":
-    # data_asset = project_file_dir / "data" / "packages" / "character_A" / "character_A.json"
     data_asset = "character_A"
     data_shot = "SQ010_SH010"
-
-    # char_data = json_data_loads("character_A")
     # char_shot = load_json(data_shot)
 
     # character_package_version(char_data, "rig")
     # shot_type_version(char_shot, "character_A", "rig")
     json_file_path_for_asset= json_file_find_path(data_shot)
-    print(json_file_path_for_asset)
     data_extracted = load_json(json_file_path_for_asset)
-    print(data_extracted)
+    packages_data = packages_data_extract(data_extracted)
+
+    for package_name, package_data in packages_data.items():
+        print(f"\n{package_name}")
+
+        for component, version in package_data.items():
+            print(f"  {component}: {version}")
