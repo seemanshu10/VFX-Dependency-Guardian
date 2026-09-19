@@ -22,41 +22,65 @@ def json_file_find_path(json_file_type) -> Path:
     json_extension = "{0}.json".format(json_file_type)
     for dirpath, dirnames, filenames in os.walk(project_file_dir):
         if json_extension in filenames:
-            data_file_path = os.path.join(dirpath, json_extension)
+            return Path(dirpath) / json_extension
 
-    return data_file_path
+    raise FileNotFoundError(f"Error: '{json_extension}' not found under '{project_file_dir}'")
 
-def character_package_version(char_data, type) -> None:
-    versions = char_data["components"][type]["versions"]
-    last_version_status = list(versions.values())[-1]
-    last_version_version = list(versions.keys())[-1]
-    print(last_version_version, end= " ")
-    print(last_version_status["status"])
+def get_latest_version(asset_data, component):
+    
+    component_data = asset_data["components"].get(component)
+    if component_data is None:
+        return None, None
 
+    versions = component_data["versions"]
+    latest = max(versions, key=lambda v: int(v.lstrip("v")))
+    # print(latest)
+    return latest, versions[latest]["status"]
+
+def compare_shot_to_packages(packages_data) -> dict:
+    report = {}
+    for asset_name, shot_components in packages_data.items():
+        asset_data = load_json(json_file_find_path(asset_name))
+        report[asset_name] = {}
+
+        for component, shot_version in shot_components.items():
+            latest_version, latest_status = get_latest_version(asset_data, component)
+            report[asset_name][component] = {
+                "shot_version": shot_version,
+                "latest_version": latest_version,
+                "latest_status": latest_status,
+                "match": shot_version == latest_version,
+            }
+
+    return report
 
 def shot_type_version(char_shot, asset_name, asset_type):
     versions = char_shot["packages"][asset_name][asset_type]
-    print(versions)
+    # print(versions)
 
-def packages_data_extract(data_extracted):
-    
+def shot_package_data_extract(data_extracted):
     packages = data_extracted["packages"]
-    print(packages)
+    # print(packages)
     return packages
 
 if __name__ == "__main__":
-    data_asset = "character_A"
     data_shot = "SQ010_SH010"
-    # char_shot = load_json(data_shot)
 
-    # character_package_version(char_data, "rig")
-    # shot_type_version(char_shot, "character_A", "rig")
-    json_file_path_for_asset= json_file_find_path(data_shot)
-    data_extracted = load_json(json_file_path_for_asset)
-    packages_data = packages_data_extract(data_extracted)
+    shot_data = load_json(json_file_find_path(data_shot))
+    shot_package_data = shot_package_data_extract(shot_data)
+    report = compare_shot_to_packages(shot_package_data)
+    print()
+    print(report)
+    # for asset_name, components in report.items():
+    #     print(f"\n{asset_name}")
 
-    for package_name, package_data in packages_data.items():
-        print(f"\n{package_name}")
+    #     for component, result in components.items():
+    #         if result["latest_version"] is None:
+    #             outcome = "MISSING IN PACKAGE"
+    #         elif result["match"]:
+    #             outcome = "OK"
+    #         else:
+    #             outcome = "OUT OF DATE"
 
-        for component, version in package_data.items():
-            print(f"  {component}: {version}")
+    #         print(f"  {component}: shot={result['shot_version']} "
+    #               f"latest={result['latest_version']} ({result['latest_status']}) -> {outcome}")
