@@ -97,17 +97,20 @@ def compare_asset_to_registry(registry_data) -> dict:
 
     return report
 
-if __name__ == "__main__":
-    '''
-    data_shot = "SQ010_SH010"
-
-    shot_data = load_json(json_file_find_path(data_shot))
+def shot_validation(shot_name) -> dict:
+    shot_data = load_json(json_file_find_path(shot_name))
     shot_package_data = shot_package_data_extract(shot_data)
-    report = compare_shot_to_packages(shot_package_data)
-    print()
-    print(report)
+    return compare_shot_to_packages(shot_package_data)
+
+def asset_validation() -> dict:
+    registry_data = load_json(json_file_find_path("registry"))
+    return compare_asset_to_registry(registry_data)
+
+def print_shot_report(shot_name, report) -> None:
+    print(f"\nSHOT {shot_name}")
+
     for asset_name, components in report.items():
-        print(f"\n{asset_name}")
+        print(f"\n  {asset_name}")
 
         for component, result in components.items():
             if result["latest_version"] is None:
@@ -115,28 +118,27 @@ if __name__ == "__main__":
             elif result["match"]:
                 outcome = "OK"
             else:
-                outcome = "OUT OF DATE"
+                outcome = "OUTDATED"
 
-            print(f"  {component}: shot={result['shot_version']} "
+            print(f"    {component}: shot={result['shot_version']} "
                   f"latest={result['latest_version']} ({result['latest_status']}) -> {outcome}")
-    '''
 
-    data_registry = load_json(json_file_find_path("registry"))
-    report = compare_asset_to_registry(data_registry)
+def print_asset_report(report) -> None:
+    print("\nASSET DEPENDENCIES")
 
     for asset_name, components in report.items():
         stale = [
-            (component, dep_component, edge)
-            for component, result in components.items()
-            for dep_component, edge in result["dependencies"].items()
+            edge
+            for result in components.values()
+            for edge in result["dependencies"].values()
             if not edge["match"]
         ]
 
-        print(f"\n{asset_name}: {'OUT OF DATE' if stale else 'UP TO DATE'}")
+        print(f"\n  {asset_name}: {'OUT OF DATE' if stale else 'UP TO DATE'}")
 
         for component, result in components.items():
             if not result["dependencies"]:
-                print(f"  {component} {result['version']}: root, no dependencies")
+                print(f"    {component} {result['version']}: root, no dependencies")
                 continue
 
             for dep_component, edge in result["dependencies"].items():
@@ -145,7 +147,13 @@ if __name__ == "__main__":
                 elif edge["match"]:
                     outcome = "OK"
                 else:
-                    outcome = "STALE"
+                    outcome = "OUTDATED"
 
-                print(f"  {component} {result['version']}: built on {dep_component} "
+                print(f"    {component} {result['version']}: built on {dep_component} "
                       f"{edge['built_on']}, latest is {edge['latest_available']} -> {outcome}")
+
+if __name__ == "__main__":
+    data_shot = "SQ010_SH010"
+
+    print_shot_report(data_shot, shot_validation(data_shot))
+    print_asset_report(asset_validation())
