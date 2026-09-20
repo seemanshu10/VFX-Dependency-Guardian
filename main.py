@@ -63,7 +63,42 @@ def shot_package_data_extract(data_extracted):
     # print(packages)
     return packages
 
+def asset_dependency_data(data_extracted):
+
+    asset_dependency = data_extracted["components"]
+    return asset_dependency
+
+def get_asset_latest_map(asset_data) -> dict:
+    components = asset_dependency_data(asset_data)
+    return {component: get_latest_version(asset_data, component)[0] for component in components}
+
+def compare_asset_to_registry(registry_data) -> dict:
+    report = {}
+    for asset_name, asset_data in registry_data["assets"].items():
+        latest_map = get_asset_latest_map(asset_data)
+        report[asset_name] = {}
+
+        for component, latest_version in latest_map.items():
+            version_data = asset_data["components"][component]["versions"][latest_version]
+            dependencies = {}
+
+            for dep_component, built_on in version_data.get("dependencies", {}).items():
+                dep_latest = latest_map.get(dep_component)
+                dependencies[dep_component] = {
+                    "built_on": built_on,
+                    "latest_available": dep_latest,
+                    "match": built_on == dep_latest,
+                }
+
+            report[asset_name][component] = {
+                "version": latest_version,
+                "dependencies": dependencies,
+            }
+
+    return report
+
 if __name__ == "__main__":
+    '''
     data_shot = "SQ010_SH010"
 
     shot_data = load_json(json_file_find_path(data_shot))
@@ -71,16 +106,46 @@ if __name__ == "__main__":
     report = compare_shot_to_packages(shot_package_data)
     print()
     print(report)
-    # for asset_name, components in report.items():
-    #     print(f"\n{asset_name}")
+    for asset_name, components in report.items():
+        print(f"\n{asset_name}")
 
-    #     for component, result in components.items():
-    #         if result["latest_version"] is None:
-    #             outcome = "MISSING IN PACKAGE"
-    #         elif result["match"]:
-    #             outcome = "OK"
-    #         else:
-    #             outcome = "OUT OF DATE"
+        for component, result in components.items():
+            if result["latest_version"] is None:
+                outcome = "MISSING IN PACKAGE"
+            elif result["match"]:
+                outcome = "OK"
+            else:
+                outcome = "OUT OF DATE"
 
-    #         print(f"  {component}: shot={result['shot_version']} "
-    #               f"latest={result['latest_version']} ({result['latest_status']}) -> {outcome}")
+            print(f"  {component}: shot={result['shot_version']} "
+                  f"latest={result['latest_version']} ({result['latest_status']}) -> {outcome}")
+    '''
+
+    data_registry = load_json(json_file_find_path("registry"))
+    report = compare_asset_to_registry(data_registry)
+
+    for asset_name, components in report.items():
+        stale = [
+            (component, dep_component, edge)
+            for component, result in components.items()
+            for dep_component, edge in result["dependencies"].items()
+            if not edge["match"]
+        ]
+
+        print(f"\n{asset_name}: {'OUT OF DATE' if stale else 'UP TO DATE'}")
+
+        for component, result in components.items():
+            if not result["dependencies"]:
+                print(f"  {component} {result['version']}: root, no dependencies")
+                continue
+
+            for dep_component, edge in result["dependencies"].items():
+                if edge["latest_available"] is None:
+                    outcome = "MISSING IN REGISTRY"
+                elif edge["match"]:
+                    outcome = "OK"
+                else:
+                    outcome = "STALE"
+
+                print(f"  {component} {result['version']}: built on {dep_component} "
+                      f"{edge['built_on']}, latest is {edge['latest_available']} -> {outcome}")
