@@ -4,7 +4,6 @@ import sys
 from PySide2.QtWidgets import QApplication
 from src.ui.main_window import MainWindow
 
-
 def run():
     """Run The Application"""
     app = QApplication(sys.argv)
