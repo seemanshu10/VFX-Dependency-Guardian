@@ -6,7 +6,7 @@
   "author": "T.Hanks",
   "packages": {
     "character_A": {
-      "model": "v002",
+      "model": "v004",
       "rig": "v002",
       "groom": "v003",
       "texture": "v001",
