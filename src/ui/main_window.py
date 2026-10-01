@@ -1,25 +1,35 @@
 """Main Entry Point For UI"""
 from PySide2 import QtWidgets
-from PySide2.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget
+from PySide2.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem
 from PySide2.QtCore import Qt
-from src.constants import APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH
+from src.constants import APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE
 
 class MainWindow(QMainWindow):
     """Main Apllication window interfaces"""
-
     def __init__(self):
         super().__init__()
         self.initUI()
-
+        
     def initUI(self):
         #set window Size and Properties 
         self.setWindowTitle(APP_TITLE)
         self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
 
+        self.assets = [
+                            ("character_A", "Character", "FAILED", 3),
+                            ("character_B", "Character", "OK", 0),
+                            ("prop_car", "Prop", "OUTDATED", 1),
+                            ("environment_01", "Environment", "OK", 0),
+                            ("vehicle_ship", "Vehicle", "FAILED", 2),
+                            ("set_building", "Set", "OUTDATED", 1),
+                            ("tree_grp", "Vegetation", "OK", 0),
+                            ("fx_smoke", "FX", "INVALID", 1),
+                        ]
         # Create Central Widget and Layout 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.create_header()
+        self.populate_table()
 
     def create_header(self):
         # create menu BAr
@@ -46,7 +56,6 @@ class MainWindow(QMainWindow):
 
         layout_main.addWidget(frame)
         
-
         validation_frame = QFrame()
 
         validation_layout = QHBoxLayout(validation_frame)
@@ -73,8 +82,9 @@ class MainWindow(QMainWindow):
 
         # adding Comboboxes 
         validation_layout.addLayout(self.combobox_build("Project", ["Demo_project"]))
-        validation_layout.addLayout(self.combobox_build("Asset Type",  ["All", "Character", "Prop", "Environment", "FX"]))
-        run_btn = QPushButton("▶   Run Validation")
+        validation_layout.addLayout(self.combobox_build("Asset Type", ASSET_TYPE))
+        validation_layout.addWidget(self.line_creation(QFrame.VLine))
+        run_btn = QPushButton("▶  Generate Validation Report")
         validation_layout.addWidget(run_btn)
         run_btn.setMinimumWidth(174)
         run_btn.setMinimumHeight(44)
@@ -127,6 +137,8 @@ class MainWindow(QMainWindow):
             ["", "ASSET", "TYPE", "STATUS", "ISSUES"]
         )
         self.details_table_widget.setColumnWidth(10, 42)
+        self.details_table_widget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.details_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
 
         header = self.details_table_widget.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
@@ -137,6 +149,9 @@ class MainWindow(QMainWindow):
         
         frame_layout.addLayout(top_layout)
         frame_layout.addWidget(self.details_table_widget, 1)
+
+        # signals Call 
+        # self.details_table_widget.items
 
         return frame_results
 
@@ -273,7 +288,29 @@ class MainWindow(QMainWindow):
             line.setObjectName("verticalLine")
             return line
 
+    def populate_table(self):
+        self.details_table_widget.setRowCount(0)
+        
+        for asset_name, asset_Type, status, issues in self.assets:
 
+            row = self.details_table_widget.rowCount()
+            self.details_table_widget.insertRow(row)
+            self.details_table_widget.setRowHeight(row, 30)
+            
+            check_box = QTableWidgetItem()
+            check_box.setCheckState(Qt.Unchecked)
+            self.details_table_widget.setItem(row, 0, check_box)
+
+            asset_name_item = QTableWidgetItem(asset_name)
+            asset_type_item = QTableWidgetItem(asset_Type)
+            asset_status_item = QTableWidgetItem(status)
+            asset_issues_item = QTableWidgetItem(str(issues))
+
+            self.details_table_widget.setItem(row , 1 ,asset_name_item)
+            self.details_table_widget.setItem(row , 2 ,asset_type_item)
+            self.details_table_widget.setItem(row , 3 ,asset_status_item)
+            self.details_table_widget.setItem(row , 4 ,asset_issues_item)
+                        
                 
 
 
