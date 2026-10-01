@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
 
         return frame_results
 
-    # ------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     #  Details
     # ------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         self.report.setReadOnly(True)
         self.report.setObjectName("reportBox")
         details_main_layout.addWidget(self.report, 1)
-        
+
         return frame
 
     def combobox_build(self, label_text, values):
