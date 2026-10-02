@@ -1,7 +1,7 @@
 """Main Entry Point For UI"""
-from PySide2 import QtWidgets
-from PySide2.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem
-from PySide2.QtCore import Qt
+from PySide2 import QtWidgets, QtCore
+from PySide2.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem)
+from PySide2.QtCore import Qt, Slot
 from src.constants import APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE
 
 class MainWindow(QMainWindow):
@@ -14,17 +14,16 @@ class MainWindow(QMainWindow):
         #set window Size and Properties 
         self.setWindowTitle(APP_TITLE)
         self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
-
         self.assets = [
-                            ("character_A", "Character", "FAILED", 3),
-                            ("character_B", "Character", "OK", 0),
-                            ("prop_car", "Prop", "OUTDATED", 1),
-                            ("environment_01", "Environment", "OK", 0),
-                            ("vehicle_ship", "Vehicle", "FAILED", 2),
-                            ("set_building", "Set", "OUTDATED", 1),
-                            ("tree_grp", "Vegetation", "OK", 0),
-                            ("fx_smoke", "FX", "INVALID", 1),
-                        ]
+                        ("character_A", "Character", "FAILED", 3),
+                        ("character_B", "Character", "OK", 0),
+                        ("prop_car", "Prop", "OUTDATED", 1),
+                        ("environment_01", "Environment", "OK", 0),
+                        ("vehicle_ship", "Vehicle", "FAILED", 2),
+                        ("set_building", "Set", "OUTDATED", 1),
+                        ("tree_grp", "Vegetation", "OK", 0),
+                        ("fx_smoke", "FX", "INVALID", 1),
+                    ]
         # Create Central Widget and Layout 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -81,8 +80,12 @@ class MainWindow(QMainWindow):
         validation_layout.addWidget(self.line_creation(QFrame.VLine))
 
         # adding Comboboxes 
-        validation_layout.addLayout(self.combobox_build("Project", ["Demo_project"]))
-        validation_layout.addLayout(self.combobox_build("Asset Type", ASSET_TYPE))
+        self.project_type_layout, self.project_type_combobox = self.combobox_build("Project", ["Demo_project", "New_Project"])
+        validation_layout.addLayout(self.project_type_layout)
+
+        self.asset_type_layout, self.asset_type_combobox = self.combobox_build("Asset Type", ASSET_TYPE)        
+        validation_layout.addLayout(self.asset_type_layout)
+        
         validation_layout.addWidget(self.line_creation(QFrame.VLine))
         run_btn = QPushButton("▶  Generate Validation Report")
         validation_layout.addWidget(run_btn)
@@ -139,6 +142,7 @@ class MainWindow(QMainWindow):
         self.details_table_widget.setColumnWidth(10, 42)
         self.details_table_widget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.details_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.details_table_widget.setSortingEnabled(True)
 
         header = self.details_table_widget.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
@@ -151,7 +155,7 @@ class MainWindow(QMainWindow):
         frame_layout.addWidget(self.details_table_widget, 1)
 
         # signals Call 
-        # self.details_table_widget.items
+        self.details_table_widget.itemSelectionChanged.connect(self.update_details)
 
         return frame_results
 
@@ -170,23 +174,19 @@ class MainWindow(QMainWindow):
         
         self.detail_icon = QtWidgets.QLabel("⬡")
         self.detail_icon.setFixedWidth(36)
-        self.detail_name = QtWidgets.QLabel("character_A")
-        self.detail_status = QtWidgets.QLabel("●  FAILED")
+        self.detail_name = QtWidgets.QLabel()
+        self.detail_status = QtWidgets.QLabel("●  ")
 
         header.addWidget(self.detail_icon)
         header.addWidget(self.detail_name)
         header.addStretch()
         header.addWidget(self.detail_status)
-
-        info = QtWidgets.QLabel(
-                    "Type:  Character\n"
-                    "Project:  demo_project\n"
-                    "Path:  /assets/characters/character_A"
-                )
+        self.asset_type_text = "Character"
+        # self.project_type_combobox = "Demo Project"
+        self.info = QtWidgets.QLabel()
         
         details_main_layout.addLayout(header)
-        details_main_layout.addWidget(info)
-
+        details_main_layout.addWidget(self.info)
         details_main_layout.addWidget(self.line_creation(QFrame.HLine))
 
         dependency_detail_label = QLabel("Dependency Details")
@@ -223,11 +223,27 @@ class MainWindow(QMainWindow):
         self.report.setObjectName("reportBox")
         details_main_layout.addWidget(self.report, 1)
 
-        self.set_details_report_for_asset("character_A")
-
         return frame
 
-    def set_details_report_for_asset(self, asset):
+    @Slot()
+    def update_details(self):
+        project_name = self.project_type_combobox.currentText()
+        print(project_name)
+        selected_asset = self.details_table_widget.selectedItems()
+        if not selected_asset:
+            return
+
+        row = self.details_table_widget.currentRow()
+        asset_name = self.details_table_widget.item(row, 1).text()
+        asset_type = self.details_table_widget.item(row, 2).text()
+        asset_status = self.details_table_widget.item(row, 3).text()
+        self.detail_name.setText(asset_name)
+        self.populate_updates_details_info(project_name, asset_type)
+        self.detail_status.setText("●  " + asset_status)
+
+        self.set_details_report_for_asset(project_name, asset_name)
+
+    def set_details_report_for_asset(self, project_name, asset):
         if asset == "character_A":
             deps = [
                 ("model", "v002", "v008", "OUTDATED"),
@@ -238,7 +254,7 @@ class MainWindow(QMainWindow):
 
             report = (
                 "asset:    character_A\n"
-                "project:  demo_project\n"
+                f"project:  {project_name}\n"
                 "status:   FAILED\n\n"
                 "components:\n\n"
                 " - model:\n"
@@ -259,8 +275,8 @@ class MainWindow(QMainWindow):
                 ("texture", "v008", "v008", "OK"),
             ]
             report = (
-                "asset:    {}\n"
-                "project:  demo_project\n"
+                f"asset:    {asset}\n"
+                f"project:  {project_name}\n"
                 "status:   OK\n\n"
                 "All registered dependencies match the approved versions."
             ).format(asset)
@@ -290,7 +306,7 @@ class MainWindow(QMainWindow):
         box.addWidget(label)
         box.addWidget(combo)
 
-        return box
+        return box, combo
 
     def create_summary(self):
         frame = QFrame()
@@ -365,7 +381,11 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row , 2 ,asset_type_item)
             self.details_table_widget.setItem(row , 3 ,asset_status_item)
             self.details_table_widget.setItem(row , 4 ,asset_issues_item)
-                        
-                
 
+    def populate_updates_details_info(self, project_name, asset_type_text):
 
+        self.info.setText(
+                    f"Type:  {asset_type_text}\n"
+                    f"Project:  {project_name}\n"
+                    "Path:  /assets/characters/character_A"
+                )
