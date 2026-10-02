@@ -223,7 +223,62 @@ class MainWindow(QMainWindow):
         self.report.setObjectName("reportBox")
         details_main_layout.addWidget(self.report, 1)
 
+        self.set_details_report_for_asset("character_A")
+
         return frame
+
+    def set_details_report_for_asset(self, asset):
+        if asset == "character_A":
+            deps = [
+                ("model", "v002", "v008", "OUTDATED"),
+                ("rig", "v001", "v004", "OUTDATED"),
+                ("texture", "v005", "v005", "OK"),
+                ("groom", "-", "v002", "MISSING"),
+            ]
+
+            report = (
+                "asset:    character_A\n"
+                "project:  demo_project\n"
+                "status:   FAILED\n\n"
+                "components:\n\n"
+                " - model:\n"
+                "     current:  v002\n"
+                "     expected: v008\n"
+                "     status:   OUTDATED\n"
+                "     message:  Using older version. Update required.\n\n"
+                " - rig:\n"
+                "     current:  v001\n"
+                "     expected: v004\n"
+                "     status:   OUTDATED\n"
+                "     message:  Using older version. Update required."
+            )
+        else:
+            deps = [
+                ("model", "v005", "v005", "OK"),
+                ("rig", "v003", "v003", "OK"),
+                ("texture", "v008", "v008", "OK"),
+            ]
+            report = (
+                "asset:    {}\n"
+                "project:  demo_project\n"
+                "status:   OK\n\n"
+                "All registered dependencies match the approved versions."
+            ).format(asset)
+
+        self.dependency_table_widget.setRowCount(0)
+
+        for component, current, expected, status in deps:
+            row = self.dependency_table_widget.rowCount()
+            self.dependency_table_widget.insertRow(row)
+
+            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(component))
+            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
+            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
+            
+            status_item = QTableWidgetItem("* " + status)
+            self.dependency_table_widget.setItem(row, 3, status_item)
+
+        self.report.setPlainText(report)
 
     def combobox_build(self, label_text, values):
         box = QVBoxLayout()
