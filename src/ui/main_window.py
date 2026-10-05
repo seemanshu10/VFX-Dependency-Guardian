@@ -7,6 +7,8 @@ from PySide2.QtCore import Qt, Slot
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
 
+from src.data_loader import load_json, json_file_find_path
+
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
 class MainWindow(QMainWindow):
@@ -174,8 +176,7 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
 
-        # hide Qt's sort arrow (set after setSortingEnabled, which turns it on)
-        # and show the sort direction as text in the header label instead
+        # Sort indicator 
         header.setSortIndicatorShown(False)
         header.sortIndicatorChanged.connect(self.update_sort_arrow)
 
@@ -427,6 +428,9 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row , 3 ,asset_status_item)
             self.details_table_widget.setItem(row , 4 ,asset_issues_item)
 
+        registry_data = load_json(json_file_find_path("registry"))
+        print(registry_data)
+        
     def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
 
         self.info.setText(
@@ -481,3 +485,5 @@ class MainWindow(QMainWindow):
             print(f"Stylesheet not found: {STYLE_FILE}")
             return
         self.setStyleSheet(STYLE_FILE.read_text(encoding="utf-8"))
+
+    
