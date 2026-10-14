@@ -1,0 +1,78 @@
+{
+  "character": {
+    "model":      [],
+    "texture":    ["model"],
+    "shader":     ["texture"],
+    "rig":        ["model"],
+    "blendshape": ["model"],
+    "groom":      ["model"],
+    "cloth":      ["model", "rig"],
+    "anim":       ["rig"],
+    "cache":      ["anim", "cloth"]
+  },
+
+  "environment": {
+    "model":   [],
+    "texture": ["model"],
+    "shader":  ["texture"],
+    "lookdev": ["model", "shader"],
+    "layout":  ["model"],
+    "proxy":   ["model"],
+    "rig":     ["model"],
+    "scatter": ["layout"]
+  },
+
+  "prop": {
+    "model":   [],
+    "texture": ["model"],
+    "shader":  ["texture"],
+    "rig":     ["model"]
+  },
+
+  "fx": {
+    "fx":    [],
+    "cache": ["fx"]
+  },
+
+  "vehicle": {
+    "model":   [],
+    "texture": ["model"],
+    "shader":  ["texture"],
+    "rig":     ["model"],
+    "lookdev": ["model", "shader"]
+  },
+
+  "set": {
+    "model":   [],
+    "texture": ["model"],
+    "shader":  ["texture"],
+    "layout":  ["model"],
+    "proxy":   ["model"]
+  },
+
+  "vegetation": {
+    "model":   [],
+    "texture": ["model"],
+    "shader":  ["texture"],
+    "proxy":   ["model"]
+  },
+
+  "crowd": {
+    "model":   [],
+    "texture": ["model"],
+    "shader":  ["texture"],
+    "rig":     ["model"],
+    "anim":    ["rig"],
+    "agent":   ["rig", "anim"]
+  },
+
+  "matte_painting": {
+    "painting":   [],
+    "projection": ["painting"]
+  },
+
+  "lightrig": {
+    "hdri":   [],
+    "lights": ["hdri"]
+  }
+}

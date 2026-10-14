@@ -4,6 +4,7 @@
   "assets": {
     "character_A": {
       "name": "Character A",
+      "type": "character",
       "components": {
         "model": {
           "versions": {
@@ -214,6 +215,7 @@
     },
     "character_B": {
       "name": "Character B",
+      "type": "character",
       "components": {
         "model": {
           "versions": {
@@ -433,6 +435,7 @@
     },
     "env_alley": {
       "name": "Alley Environment",
+      "type": "environment",
       "components": {
         "model": {
           "versions": {
@@ -567,6 +570,447 @@
               "notes": "",
               "dependencies": {
                 "texture": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "prop_sword": {
+      "name": "Hero Sword",
+      "type": "prop",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-09T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-14T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-16T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "rig": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-20T10:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "vehicle_ship": {
+      "name": "Cargo Ship",
+      "type": "vehicle",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "DEPRECATED",
+              "published": "2026-01-07T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "APPROVED",
+              "published": "2026-02-02T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-02-06T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-02-09T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "rig": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-02-12T10:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "Wheel and rudder controls.",
+              "dependencies": {
+                "model": "v004"
+              }
+            }
+          }
+        },
+        "lookdev": {
+          "versions": {
+            "v001": {
+              "status": "AVAILABLE",
+              "published": "2026-02-15T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {
+                "model": "v002",
+                "shader": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "set_building": {
+      "name": "Warehouse Building",
+      "type": "set",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-13T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-21T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "layout": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-26T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "proxy": {
+          "versions": {
+            "v001": {
+              "status": "AVAILABLE",
+              "published": "2026-01-27T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "veg_oak_tree": {
+      "name": "Oak Tree",
+      "type": "vegetation",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-02-03T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-02-05T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "AVAILABLE",
+              "published": "2026-02-06T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "proxy": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-02-07T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "crowd_soldier": {
+      "name": "Soldier Agent",
+      "type": "crowd",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-08T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-12T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-14T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "rig": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-17T10:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "anim": {
+          "versions": {
+            "v001": {
+              "status": "DEPRECATED",
+              "published": "2026-01-22T10:00:00+00:00",
+              "author": "j.rivera",
+              "notes": "Walk cycle foot slide.",
+              "dependencies": {
+                "rig": "v001"
+              }
+            },
+            "v002": {
+              "status": "APPROVED",
+              "published": "2026-02-01T10:00:00+00:00",
+              "author": "j.rivera",
+              "notes": "",
+              "dependencies": {
+                "rig": "v001"
+              }
+            }
+          }
+        },
+        "agent": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-02-11T10:00:00+00:00",
+              "author": "r.silva",
+              "notes": "",
+              "dependencies": {
+                "rig": "v001",
+                "anim": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "fx_smoke": {
+      "name": "Chimney Smoke",
+      "type": "fx",
+      "components": {
+        "fx": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-28T10:00:00+00:00",
+              "author": "r.silva",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "AVAILABLE",
+              "published": "2026-02-18T10:00:00+00:00",
+              "author": "r.silva",
+              "notes": "Denser plume.",
+              "dependencies": {}
+            }
+          }
+        },
+        "cache": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-02-19T10:00:00+00:00",
+              "author": "r.silva",
+              "notes": "",
+              "dependencies": {
+                "fx": "v002"
+              }
+            }
+          }
+        }
+      }
+    },
+    "dmp_city_skyline": {
+      "name": "City Skyline DMP",
+      "type": "matte_painting",
+      "components": {
+        "painting": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-30T10:00:00+00:00",
+              "author": "e.moreau",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "PENDING",
+              "published": "2026-02-24T10:00:00+00:00",
+              "author": "e.moreau",
+              "notes": "Sunset relight.",
+              "dependencies": {}
+            }
+          }
+        },
+        "projection": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-02-02T10:00:00+00:00",
+              "author": "e.moreau",
+              "notes": "",
+              "dependencies": {
+                "painting": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "lightrig_ext_day": {
+      "name": "Exterior Day Light Rig",
+      "type": "lightrig",
+      "components": {
+        "hdri": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-10T10:00:00+00:00",
+              "author": "d.kim",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "lights": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-01-15T10:00:00+00:00",
+              "author": "d.kim",
+              "notes": "",
+              "dependencies": {
+                "hdri": "v001"
               }
             }
           }

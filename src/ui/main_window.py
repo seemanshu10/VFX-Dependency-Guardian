@@ -31,6 +31,8 @@ class MainWindow(QMainWindow):
                         ("tree_grp", "Vegetation", "OK", 0),
                         ("fx_smoke", "FX", "INVALID", 1),
                     ]
+
+        
         # Create Central Widget and Layout 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -90,12 +92,13 @@ class MainWindow(QMainWindow):
         radio_box = QHBoxLayout()
         self.all_radio = QRadioButton("All Assets")
         self.selected_radio = QRadioButton("Selected Assets")
-        self.single_radio = QRadioButton("Single Asset")
+        # self.single_radio = QRadioButton("Single Asset")
 
+        self.all_radio.setChecked(True)
         validation_scope_main_box.addWidget(scope_label)
         radio_box.addWidget(self.all_radio)
         radio_box.addWidget(self.selected_radio)
-        radio_box.addWidget(self.single_radio)
+        # radio_box.addWidget(self.single_radio)
         validation_scope_main_box.addLayout(radio_box)
 
         validation_layout.addLayout(validation_scope_main_box, 0)
@@ -170,7 +173,7 @@ class MainWindow(QMainWindow):
         self.details_table_widget.setSortingEnabled(True)
 
         header = self.details_table_widget.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
@@ -407,8 +410,15 @@ class MainWindow(QMainWindow):
 
     def populate_table(self):
         self.details_table_widget.setRowCount(0)
-        
-        for asset_name, asset_Type, status, issues in self.assets:
+        registry_data = load_json(json_file_find_path("registry"))
+        # print(registry_data)
+        for asset_id, asset_type in registry_data["assets"].items():
+            asset_name = registry_data["assets"][asset_id]["name"]
+            asset_type = registry_data["assets"][asset_id]["type"]
+            print(asset_name)
+            print(asset_type)
+
+        # for asset_name, asset_type, status, issues in self.assets:
 
             row = self.details_table_widget.rowCount()
             self.details_table_widget.insertRow(row)
@@ -419,17 +429,16 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row, 0, check_box)
 
             asset_name_item = QTableWidgetItem(asset_name)
-            asset_type_item = QTableWidgetItem(asset_Type)
-            asset_status_item = QTableWidgetItem(status)
-            asset_issues_item = QTableWidgetItem(str(issues))
+            asset_type_item = QTableWidgetItem(asset_type)
+            # asset_status_item = QTableWidgetItem(status)
+            # asset_issues_item = QTableWidgetItem(str(issues))
 
             self.details_table_widget.setItem(row , 1 ,asset_name_item)
             self.details_table_widget.setItem(row , 2 ,asset_type_item)
-            self.details_table_widget.setItem(row , 3 ,asset_status_item)
-            self.details_table_widget.setItem(row , 4 ,asset_issues_item)
+            # self.details_table_widget.setItem(row , 3 ,asset_status_item)
+            # self.details_table_widget.setItem(row , 4 ,asset_issues_item)
 
-        registry_data = load_json(json_file_find_path("registry"))
-        print(registry_data)
+        
         
     def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
 
@@ -466,7 +475,7 @@ class MainWindow(QMainWindow):
 
         self.all_radio.setText(labels["all_radio"])
         self.selected_radio.setText(labels["selected_radio"])
-        self.single_radio.setText(labels["single_radio"])
+        # self.single_radio.setText(labels["single_radio"])
         self.asset_type_label.setText(labels["type_filter"])
         self.search_box.setPlaceholderText(labels["search"])
 

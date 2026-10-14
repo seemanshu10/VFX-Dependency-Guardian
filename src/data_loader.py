@@ -3,8 +3,9 @@ import os
 import json
 from pathlib import Path
 
-# <repo>/data  (this file lives in <repo>/src)
-DATA_DIR = Path(__file__).resolve().parent.parent
+
+DATA_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
+# print(DATA_DIR)
 
 def load_json(path: Path) -> dict:
     """Load and parse a single JSON file. Raises on missing file or bad JSON,
