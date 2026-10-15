@@ -1,0 +1,22 @@
+{
+  "shot": "SQ020_SH020",
+  "sequence": "SQ020",
+  "name": "SH020",
+  "build": "2026-05-07T14:30:00+00:00",
+  "author": "T.Hanks",
+  "packages": {
+    "char_pilot": {
+      "model": "v002",
+      "rig": "v001",
+      "blendshape": "v001",
+      "texture": "v001",
+      "shader": "v001"
+    },
+    "vehicle_jet": {
+      "model": "v001",
+      "texture": "v001",
+      "shader": "v001",
+      "rig": "v001"
+    }
+  }
+}

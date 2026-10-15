@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "description": "Master version registry. The source of approved truth. Status belongs to a VERSION, never to a component. 'dependencies' pins the upstream component versions that a version was built against; an empty object means the version has no upstream.",
+  "assets": {
+    "character_A": {
+      "name": "Character A",
+      "type": "character",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-02T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "AVAILABLE",
+              "published": "2026-04-20T15:30:00+00:00",
+              "author": "a.chen",
+              "notes": "Costume pass for this show.",
+              "dependencies": {}
+            }
+          }
+        },
+        "rig": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-06T11:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "Built before the costume model update.",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-22T09:15:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-24T14:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "anim": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-28T16:45:00+00:00",
+              "author": "j.rivera",
+              "notes": "",
+              "dependencies": {
+                "rig": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "char_pilot": {
+      "name": "Pilot",
+      "type": "character",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "DEPRECATED",
+              "published": "2026-04-01T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "APPROVED",
+              "published": "2026-04-14T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v003": {
+              "status": "PENDING",
+              "published": "2026-05-03T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "Helmet-off variant.",
+              "dependencies": {}
+            }
+          }
+        },
+        "rig": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-16T10:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "blendshape": {
+          "versions": {
+            "v001": {
+              "status": "AVAILABLE",
+              "published": "2026-05-05T10:00:00+00:00",
+              "author": "k.tanaka",
+              "notes": "",
+              "dependencies": {
+                "model": "v003"
+              }
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-18T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-19T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "vehicle_jet": {
+      "name": "Fighter Jet",
+      "type": "vehicle",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-03T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "APPROVED",
+              "published": "2026-04-25T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "Landing gear added.",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-27T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "AVAILABLE",
+              "published": "2026-04-29T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "rig": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-08T10:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "No landing gear controls yet.",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "lookdev": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-05-01T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {
+                "model": "v002",
+                "shader": "v002"
+              }
+            }
+          }
+        }
+      }
+    },
+    "prop_helmet": {
+      "name": "Flight Helmet",
+      "type": "prop",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-05T10:00:00+00:00",
+              "author": "a.chen",
+              "notes": "",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-07T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-09T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        }
+      }
+    },
+    "env_hangar": {
+      "name": "Hangar Environment",
+      "type": "environment",
+      "components": {
+        "model": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-02T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {}
+            },
+            "v002": {
+              "status": "AVAILABLE",
+              "published": "2026-04-21T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "Second bay door opened up.",
+              "dependencies": {}
+            }
+          }
+        },
+        "texture": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-23T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "shader": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-24T10:00:00+00:00",
+              "author": "s.dubois",
+              "notes": "",
+              "dependencies": {
+                "texture": "v001"
+              }
+            }
+          }
+        },
+        "lookdev": {
+          "versions": {
+            "v001": {
+              "status": "AVAILABLE",
+              "published": "2026-04-26T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "",
+              "dependencies": {
+                "model": "v001",
+                "shader": "v001"
+              }
+            }
+          }
+        },
+        "layout": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-22T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {
+                "model": "v002"
+              }
+            }
+          }
+        },
+        "proxy": {
+          "versions": {
+            "v001": {
+              "status": "DEPRECATED",
+              "published": "2026-04-04T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {
+                "model": "v001"
+              }
+            }
+          }
+        },
+        "scatter": {
+          "versions": {
+            "v001": {
+              "status": "APPROVED",
+              "published": "2026-04-25T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "",
+              "dependencies": {
+                "layout": "v001"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

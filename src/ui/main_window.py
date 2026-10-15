@@ -7,7 +7,7 @@ from PySide2.QtCore import Qt, Slot
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
 
-from src.data_loader import load_json, json_file_find_path
+from src.data_loader import load_json, json_file_find_path, get_all_folder_list
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.create_header()
         self.populate_table()
+        # self.get_asset_types()
         self.apply_style()
 
     def create_header(self):
@@ -105,10 +106,10 @@ class MainWindow(QMainWindow):
         validation_layout.addWidget(self.line_creation(QFrame.VLine))
 
         # adding Comboboxes 
-        self.project_type_layout, self.project_type_combobox = self.combobox_build("Project", ["Demo_project", "New_Project"])
+        self.project_type_layout, self.project_type_combobox = self.combobox_build("Project", get_all_folder_list())
         validation_layout.addLayout(self.project_type_layout, 1)
 
-        self.asset_type_layout, self.asset_type_combobox = self.combobox_build("Asset Type", ASSET_TYPE)
+        self.asset_type_layout, self.asset_type_combobox = self.combobox_build("Asset Type", self.get_asset_types())
         # keep the label so its text can change with the mode
         self.asset_type_label = self.asset_type_layout.itemAt(0).widget()
         validation_layout.addLayout(self.asset_type_layout, 1)
@@ -132,7 +133,7 @@ class MainWindow(QMainWindow):
 
     def create_main_area(self):
         main_area_splitter = QSplitter(Qt.Horizontal)
-        main_area_splitter.addWidget(self.create_results_panel())
+        main_area_splitter.addWidget(self.create_validation_results_panel())
         main_area_splitter.addWidget(self.create_details_panel())
 
         main_area_splitter.setStretchFactor(0, 3)
@@ -140,7 +141,7 @@ class MainWindow(QMainWindow):
 
         return main_area_splitter
 
-    def create_results_panel(self):
+    def create_validation_results_panel(self):
         frame_results = QFrame()
         frame_results.setObjectName("panel")
         frame_layout = QVBoxLayout(frame_results)
@@ -188,7 +189,6 @@ class MainWindow(QMainWindow):
 
         # signals Call 
         self.details_table_widget.itemSelectionChanged.connect(self.update_details)
-
         return frame_results
 
     #-------------------------------------------------------------------------
@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
         return frame
 
     @Slot()
-    def update_details(self):
+    def update_details(self) -> None:
         project_name = self.project_type_combobox.currentText()
         # print(project_name)
         selected_asset = self.details_table_widget.selectedItems()
@@ -415,8 +415,8 @@ class MainWindow(QMainWindow):
         for asset_id, asset_type in registry_data["assets"].items():
             asset_name = registry_data["assets"][asset_id]["name"]
             asset_type = registry_data["assets"][asset_id]["type"]
-            print(asset_name)
-            print(asset_type)
+            # print(asset_name)
+            # print(asset_type)
 
         # for asset_name, asset_type, status, issues in self.assets:
 
@@ -437,9 +437,8 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row , 2 ,asset_type_item)
             # self.details_table_widget.setItem(row , 3 ,asset_status_item)
             # self.details_table_widget.setItem(row , 4 ,asset_issues_item)
+      
 
-        
-        
     def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
 
         self.info.setText(
@@ -483,6 +482,17 @@ class MainWindow(QMainWindow):
         self.details_header_labels = list(labels["table_headers"])
         header = self.details_table_widget.horizontalHeader()
         self.update_sort_arrow(header.sortIndicatorSection(), header.sortIndicatorOrder())
+
+    def get_asset_types(self):
+        registry_data = load_json(json_file_find_path("registry"))
+        all_asset_type = []
+        for asset_id, asset_type in registry_data["assets"].items():
+            asset_type = registry_data["assets"][asset_id]["type"]
+            
+            all_asset_type.append(asset_type)
+
+        # print(list(sorted(set(all_asset_type))))
+        return(list(sorted(set(all_asset_type))))
 
     # ------------------------------------------------------------------------
     #  Styling

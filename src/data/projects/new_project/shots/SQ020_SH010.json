@@ -1,0 +1,32 @@
+{
+  "shot": "SQ020_SH010",
+  "sequence": "SQ020",
+  "name": "SH010",
+  "build": "2026-05-06T09:00:00+00:00",
+  "author": "T.Hanks",
+  "packages": {
+    "character_A": {
+      "model": "v001",
+      "rig": "v001",
+      "texture": "v001",
+      "shader": "v001",
+      "anim": "v001"
+    },
+    "vehicle_jet": {
+      "model": "v002",
+      "texture": "v001",
+      "shader": "v001",
+      "rig": "v001",
+      "lookdev": "v001"
+    },
+    "env_hangar": {
+      "model": "v002",
+      "texture": "v001",
+      "shader": "v001",
+      "lookdev": "v002",
+      "layout": "v001",
+      "proxy": "v001",
+      "scatter": "v001"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "asset": "character_A",
+  "name": "Character A",
+  "type": "character",
+  "created": "2026-04-01T09:00:00+00:00",
+  "components": {
+    "model": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-02T10:00:00+00:00",
+          "author": "a.chen",
+          "notes": ""
+        },
+        "v002": {
+          "status": "AVAILABLE",
+          "published": "2026-04-20T15:30:00+00:00",
+          "author": "a.chen",
+          "notes": "Costume pass for this show."
+        }
+      }
+    },
+    "rig": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-06T11:00:00+00:00",
+          "author": "m.okafor",
+          "notes": ""
+        }
+      }
+    },
+    "texture": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-22T09:15:00+00:00",
+          "author": "s.dubois",
+          "notes": ""
+        }
+      }
+    },
+    "shader": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-24T14:00:00+00:00",
+          "author": "s.dubois",
+          "notes": ""
+        }
+      }
+    },
+    "anim": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-28T16:45:00+00:00",
+          "author": "j.rivera",
+          "notes": ""
+        }
+      }
+    }
+  }
+}

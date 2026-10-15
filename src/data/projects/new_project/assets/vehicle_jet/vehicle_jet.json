@@ -1,0 +1,64 @@
+{
+  "asset": "vehicle_jet",
+  "name": "Fighter Jet",
+  "type": "vehicle",
+  "created": "2026-04-02T09:00:00+00:00",
+  "components": {
+    "model": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-03T10:00:00+00:00",
+          "author": "l.novak",
+          "notes": ""
+        },
+        "v002": {
+          "status": "APPROVED",
+          "published": "2026-04-25T10:00:00+00:00",
+          "author": "l.novak",
+          "notes": "Landing gear added."
+        }
+      }
+    },
+    "texture": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-27T10:00:00+00:00",
+          "author": "s.dubois",
+          "notes": ""
+        }
+      }
+    },
+    "shader": {
+      "versions": {
+        "v001": {
+          "status": "AVAILABLE",
+          "published": "2026-04-29T10:00:00+00:00",
+          "author": "s.dubois",
+          "notes": ""
+        }
+      }
+    },
+    "rig": {
+      "versions": {
+        "v001": {
+          "status": "APPROVED",
+          "published": "2026-04-08T10:00:00+00:00",
+          "author": "m.okafor",
+          "notes": "No landing gear controls yet."
+        }
+      }
+    },
+    "lookdev": {
+      "versions": {
+        "v001": {
+          "status": "PENDING",
+          "published": "2026-05-01T10:00:00+00:00",
+          "author": "l.novak",
+          "notes": ""
+        }
+      }
+    }
+  }
+}
