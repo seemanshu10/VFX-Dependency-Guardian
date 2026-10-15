@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 DATA_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
+PROJECTS_DIR = DATA_DIR / "src" / "data" / "projects"
 # print(DATA_DIR)
 
 def load_json(path: Path) -> dict:
@@ -30,8 +31,16 @@ def json_file_find_path(json_file_type, search_dir: Path = DATA_DIR) -> Path:
     raise FileNotFoundError(f"Error: '{json_extension}' not found under '{search_dir}'")
 
 def get_all_folder_list():
-    projects_folder = os.path.join(DATA_DIR, "src", "data", "projects")
-    project_folder_names = os.listdir(projects_folder)
-    # print(project_folder_names)
+    project_folder_names = []
+
+    for project_name in os.listdir(PROJECTS_DIR):
+        if (PROJECTS_DIR / project_name).is_dir():
+            project_folder_names.append(project_name)
+    # print (sorted(project_folder_names))
+
     return sorted(project_folder_names)
+
+def get_project_folder(project_name) -> Path:
+    """Root folder of one project; pass it as search_dir so lookups stay inside that project."""
+    return PROJECTS_DIR / project_name
 

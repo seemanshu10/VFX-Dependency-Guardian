@@ -6,8 +6,9 @@ from PySide2.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide2.QtCore import Qt, Slot
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
+import qtawesome
 
-from src.data_loader import load_json, json_file_find_path, get_all_folder_list
+from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -106,7 +107,7 @@ class MainWindow(QMainWindow):
         validation_layout.addWidget(self.line_creation(QFrame.VLine))
 
         # adding Comboboxes 
-        self.project_type_layout, self.project_type_combobox = self.combobox_build("Project", get_all_folder_list())
+        self.project_type_layout, self.project_name_combobox = self.combobox_build("Project", get_all_folder_list())
         validation_layout.addLayout(self.project_type_layout, 1)
 
         self.asset_type_layout, self.asset_type_combobox = self.combobox_build("Asset Type", self.get_asset_types())
@@ -115,7 +116,8 @@ class MainWindow(QMainWindow):
         validation_layout.addLayout(self.asset_type_layout, 1)
         
         validation_layout.addWidget(self.line_creation(QFrame.VLine))
-        run_btn = QPushButton("▶  Generate Validation Report")
+        run_btn = QPushButton("Generate Validation Report")
+        run_btn.setIcon(qtawesome.icon('mdi.export', color = 'black'))
         run_btn.setObjectName("runButton")
         validation_layout.addWidget(run_btn)
         run_btn.setMinimumWidth(174)
@@ -126,6 +128,9 @@ class MainWindow(QMainWindow):
         layout_main.addWidget(self.create_main_area(), 1)
 
         layout_main.addStretch()
+
+        # connected last: the handler touches the table and details panel built above
+        self.project_name_combobox.currentTextChanged.connect(self.on_project_changed)
 
     # ------------------------------------------------------------------------
     #  Results
@@ -218,7 +223,7 @@ class MainWindow(QMainWindow):
         header.addStretch()
         header.addWidget(self.detail_status)
         self.asset_type_text = "Character"
-        # self.project_type_combobox = "Demo Project"
+        # self.project_name_combobox = "Demo Project"
         self.info = QtWidgets.QLabel()
         self.info.setObjectName("detailInfo")
 
@@ -267,7 +272,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def update_details(self) -> None:
-        project_name = self.project_type_combobox.currentText()
+        project_name = self.project_name_combobox.currentText()
         # print(project_name)
         selected_asset = self.details_table_widget.selectedItems()
         if not selected_asset:
@@ -276,7 +281,9 @@ class MainWindow(QMainWindow):
         row = self.details_table_widget.currentRow()
         asset_name = self.details_table_widget.item(row, 1).text()
         asset_type = self.details_table_widget.item(row, 2).text()
-        asset_status = self.details_table_widget.item(row, 3).text()
+        # status column stays empty until validation has run
+        status_item = self.details_table_widget.item(row, 3)
+        asset_status = status_item.text() if status_item else "NOT VALIDATED"
         self.detail_name.setText(asset_name)
         self.populate_updates_details_info(asset_name,project_name, asset_type)
         self.detail_status.setText("●  " + asset_status)
@@ -408,16 +415,32 @@ class MainWindow(QMainWindow):
             line.setObjectName("verticalLine")
             return line
 
+    @Slot(str)
+    def on_project_changed(self, project_name):
+        self.asset_type_combobox.clear()
+        self.asset_type_combobox.addItems(self.get_asset_types())
+        self.populate_table()
+        self.clear_details()
+
+    def clear_details(self):
+        # the old selection belonged to the previous project
+        self.detail_name.setText("")
+        self.detail_status.setText("●  ")
+        self.info.setText("")
+        self.dependency_table_widget.setRowCount(0)
+        self.report.clear()
+
     def populate_table(self):
         self.details_table_widget.setRowCount(0)
-        registry_data = load_json(json_file_find_path("registry"))
+        # with sorting on, Qt re-sorts after every setItem and the row index goes stale
+        self.details_table_widget.setSortingEnabled(False)
+        project_name = self.project_name_combobox.currentText()
+        registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
         # print(registry_data)
         for asset_id, asset_type in registry_data["assets"].items():
             asset_name = registry_data["assets"][asset_id]["name"]
             asset_type = registry_data["assets"][asset_id]["type"]
-            # print(asset_name)
-            # print(asset_type)
-
+            
         # for asset_name, asset_type, status, issues in self.assets:
 
             row = self.details_table_widget.rowCount()
@@ -437,7 +460,8 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row , 2 ,asset_type_item)
             # self.details_table_widget.setItem(row , 3 ,asset_status_item)
             # self.details_table_widget.setItem(row , 4 ,asset_issues_item)
-      
+
+        self.details_table_widget.setSortingEnabled(True)
 
     def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
 
@@ -484,8 +508,9 @@ class MainWindow(QMainWindow):
         self.update_sort_arrow(header.sortIndicatorSection(), header.sortIndicatorOrder())
 
     def get_asset_types(self):
-        registry_data = load_json(json_file_find_path("registry"))
-        all_asset_type = []
+        project_name = self.project_name_combobox.currentText()
+        registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
+        all_asset_type = ["All"]
         for asset_id, asset_type in registry_data["assets"].items():
             asset_type = registry_data["assets"][asset_id]["type"]
             
