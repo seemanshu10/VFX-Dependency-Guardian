@@ -8,7 +8,7 @@ from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
 import qtawesome
 
-from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder
+from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -34,7 +34,10 @@ class MainWindow(QMainWindow):
                     ]
 
         
-        # Create Central Widget and Layout 
+        # set before create_header: the filter combo and table read it
+        self.current_mode = MODE_ASSETS
+
+        # Create Central Widget and Layout
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.create_header()
@@ -131,6 +134,7 @@ class MainWindow(QMainWindow):
 
         # connected last: the handler touches the table and details panel built above
         self.project_name_combobox.currentTextChanged.connect(self.on_project_changed)
+        self.asset_type_combobox.currentTextChanged.connect(self.on_asset_type_changed)
 
     # ------------------------------------------------------------------------
     #  Results
@@ -285,10 +289,81 @@ class MainWindow(QMainWindow):
         status_item = self.details_table_widget.item(row, 3)
         asset_status = status_item.text() if status_item else "NOT VALIDATED"
         self.detail_name.setText(asset_name)
-        self.populate_updates_details_info(asset_name,project_name, asset_type)
         self.detail_status.setText("●  " + asset_status)
 
+        if self.current_mode == MODE_SHOTS:
+            shot_file = self.details_table_widget.item(row, 1).data(Qt.UserRole)
+            self.set_details_for_shot(project_name, shot_file)
+            return
+
+        self.populate_updates_details_info(asset_name,project_name, asset_type)
         self.set_details_report_for_asset(project_name, asset_name)
+
+    def set_details_for_shot(self, project_name, shot_file):
+        shot_data = load_json(shot_file)
+
+        self.info.setText(
+                    f"Sequence:  {shot_data['sequence']}\n"
+                    f"Project:  {project_name}\n"
+                    f"Build:  {shot_data['build']}\n"
+                    f"Author:  {shot_data['author']}\n"
+                    f"Path:  /shots/{Path(shot_file).name}"
+                )
+
+        # shot tier: expected = highest version in the asset's package JSON, whatever its status
+        deps = []
+        for asset, components in shot_data["packages"].items():
+            package_file = get_project_folder(project_name) / "assets" / asset / f"{asset}.json"
+            package_data = load_json(package_file) if package_file.exists() else {"components": {}}
+
+            for component, current in components.items():
+                if component not in package_data["components"]:
+                    deps.append((asset, component, current, "-", "MISSING"))
+                    continue
+
+                versions = package_data["components"][component]["versions"]
+                expected = max(versions, key=lambda version: int(version.lstrip("v")))
+
+                if current not in versions:
+                    status = "INVALID"
+                elif current == expected:
+                    status = "OK"
+                else:
+                    status = "OUTDATED"
+                deps.append((asset, component, current, expected, status))
+
+        self.dependency_table_widget.setRowCount(0)
+        report_lines = []
+
+        for asset, component, current, expected, status in deps:
+            row = self.dependency_table_widget.rowCount()
+            self.dependency_table_widget.insertRow(row)
+
+            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(f"{asset} / {component}"))
+            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
+            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
+            self.dependency_table_widget.setItem(row, 3, QTableWidgetItem("* " + status))
+
+            if status != "OK":
+                report_lines.append(
+                    f" - {asset} / {component}:\n"
+                    f"     current:  {current}\n"
+                    f"     expected: {expected}\n"
+                    f"     status:   {status}\n"
+                )
+
+        shot_status = "FAILED" if report_lines else "OK"
+        report = (
+            f"shot:     {shot_data['shot']}\n"
+            f"project:  {project_name}\n"
+            f"status:   {shot_status}\n\n"
+        )
+        if report_lines:
+            report += "components:\n\n" + "\n".join(report_lines)
+        else:
+            report += "All packages match the latest published versions."
+
+        self.report.setPlainText(report)
 
     def set_details_report_for_asset(self, project_name, asset):
         if asset == "character_A":
@@ -367,21 +442,22 @@ class MainWindow(QMainWindow):
         validation_label.setObjectName("panelTitle")
         layout.addWidget(validation_label) 
         values = [
-            ("✓", "124", "OK", "ok"),
-            ("●", "18", "OUTDATED", "outdated"),
-            ("×", "7", "MISSING", "missing"),
-            ("●", "2", "INVALID", "invalid"),
+            ("mdi.check-circle", "#23d47b", "124", "OK", "ok"),
+            ("mdi.clock-alert",    "#ffad22", "18",  "OUTDATED", "outdated"),
+            ("mdi.close-circle",   "#ff4f56", "7",   "MISSING",  "missing"),
+            ("mdi.alert-octagon",  "#7c9fc4", "2",   "INVALID",  "invalid"),
         ]
 
-        for i, (icon, number, label, state) in enumerate(values):
+        for i, (icon_name, color, number, label, state) in enumerate(values):
             item = QWidget()
             item.setObjectName("summaryItem")
             item_layout = QHBoxLayout(item)
             item_layout.setContentsMargins(0, 0, 0, 0)
             item_layout.setSpacing(4)
 
-            icon_label = QLabel(icon)
+            icon_label = QLabel()
             icon_label.setObjectName("summaryIcon_" + state)
+            icon_label.setPixmap(qtawesome.icon(icon_name, color=color).pixmap(24, 24))
 
             number_label = QLabel(number)
             number_label.setObjectName("summaryNumber")
@@ -398,7 +474,6 @@ class MainWindow(QMainWindow):
             item_layout.addWidget(icon_label)
             item_layout.addLayout(text_box)
             item_layout.addStretch()
-
             layout.addWidget(item, 1)
 
             if i < len(values) - 1:
@@ -417,10 +492,27 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def on_project_changed(self, project_name):
-        self.asset_type_combobox.clear()
-        self.asset_type_combobox.addItems(self.get_asset_types())
+
+        self.refresh_type_filter()
         self.populate_table()
         self.clear_details()
+
+    @Slot(str)
+    def on_asset_type_changed(self, asset_type):
+        self.populate_table()
+        self.clear_details()
+
+    def refresh_type_filter(self):
+        """Fill the filter combo with asset types or sequences, depending on the mode."""
+        if self.current_mode == MODE_SHOTS:
+            values = self.get_sequences()
+        else:
+            values = self.get_asset_types()
+
+        self.asset_type_combobox.blockSignals(True)
+        self.asset_type_combobox.clear()
+        self.asset_type_combobox.addItems(values)
+        self.asset_type_combobox.blockSignals(False)
 
     def clear_details(self):
         # the old selection belonged to the previous project
@@ -435,12 +527,25 @@ class MainWindow(QMainWindow):
         # with sorting on, Qt re-sorts after every setItem and the row index goes stale
         self.details_table_widget.setSortingEnabled(False)
         project_name = self.project_name_combobox.currentText()
-        registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
-        # print(registry_data)
-        for asset_id, asset_type in registry_data["assets"].items():
-            asset_name = registry_data["assets"][asset_id]["name"]
-            asset_type = registry_data["assets"][asset_id]["type"]
-            
+        selected_type = self.asset_type_combobox.currentText()
+
+        # (name, type, file) per row: type is the asset type, or the sequence in shots mode
+        rows = []
+        if self.current_mode == MODE_SHOTS:
+            for shot_file in get_shot_files(project_name):
+                shot_data = load_json(shot_file)
+                rows.append((shot_data["shot"], shot_data["sequence"], str(shot_file)))
+        else:
+            registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
+            # print(registry_data)
+            for asset_id in registry_data["assets"]:
+                rows.append((registry_data["assets"][asset_id]["name"],
+                             registry_data["assets"][asset_id]["type"], None))
+
+        for asset_name, asset_type, source_file in rows:
+            if selected_type != "All" and asset_type != selected_type:
+                continue
+
         # for asset_name, asset_type, status, issues in self.assets:
 
             row = self.details_table_widget.rowCount()
@@ -452,6 +557,8 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row, 0, check_box)
 
             asset_name_item = QTableWidgetItem(asset_name)
+            # remember which file the row came from, so the details panel can load it
+            asset_name_item.setData(Qt.UserRole, source_file)
             asset_type_item = QTableWidgetItem(asset_type)
             # asset_status_item = QTableWidgetItem(status)
             # asset_issues_item = QTableWidgetItem(str(issues))
@@ -490,7 +597,13 @@ class MainWindow(QMainWindow):
             btn.style().polish(btn)
 
         mode = MODE_SHOTS if active is self.shots_btn else MODE_ASSETS
+        self.current_mode = mode
         self.set_mode_labels(mode)
+
+        # signals are blocked while the combo refills, so refresh the table here
+        self.refresh_type_filter()
+        self.populate_table()
+        self.clear_details()
 
     def set_mode_labels(self, mode):
         """Update all mode-dependent text. Edit MODE_LABELS in constants.py to change it."""
@@ -510,14 +623,26 @@ class MainWindow(QMainWindow):
     def get_asset_types(self):
         project_name = self.project_name_combobox.currentText()
         registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
-        all_asset_type = ["All"]
+        all_asset_type = []
         for asset_id, asset_type in registry_data["assets"].items():
             asset_type = registry_data["assets"][asset_id]["type"]
-            
+
             all_asset_type.append(asset_type)
 
         # print(list(sorted(set(all_asset_type))))
-        return(list(sorted(set(all_asset_type))))
+        # "All" added after sorting so it is always first
+        return ["All"] + sorted(set(all_asset_type))
+
+    def get_sequences(self):
+        project_name = self.project_name_combobox.currentText()
+        all_sequences = []
+        # read the "sequence" field, not the filename: naming conventions differ per studio
+        for shot_file in get_shot_files(project_name):
+            shot_data = load_json(shot_file)
+            all_sequences.append(shot_data["sequence"])
+
+        # "All" added after sorting so it is always first
+        return ["All"] + sorted(set(all_sequences))
 
     # ------------------------------------------------------------------------
     #  Styling

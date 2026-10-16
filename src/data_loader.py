@@ -44,3 +44,11 @@ def get_project_folder(project_name) -> Path:
     """Root folder of one project; pass it as search_dir so lookups stay inside that project."""
     return PROJECTS_DIR / project_name
 
+def get_shot_files(project_name) -> list:
+    """All shot JSON files for one project, empty if the project has no shots folder."""
+    shots_dir = get_project_folder(project_name) / "shots"
+    if not shots_dir.is_dir():
+        return []
+    return sorted(shots_dir.glob("*.json"))
+
+
