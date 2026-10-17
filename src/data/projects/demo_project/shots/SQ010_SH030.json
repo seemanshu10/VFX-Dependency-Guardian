@@ -1,0 +1,28 @@
+{
+  "shot": "SQ010_SH030",
+  "sequence": "SQ010",
+  "name": "SH030",
+  "build": "2026-03-06T16:15:00+00:00",
+  "author": "R.Patel",
+  "packages": {
+    "character_B": {
+      "model": "v001",
+      "rig": "v005",
+      "groom": "v003",
+      "texture": "v001",
+      "shader": "v001",
+      "blendshape": "v001",
+      "cloth": "v001",
+      "anim": "v002",
+      "cache": "v002"
+    },
+    "env_alley": {
+      "model": "v002",
+      "texture": "v002",
+      "shader": "v001",
+      "lookdev": "v003",
+      "layout": "v002",
+      "groom": "v001"
+    }
+  }
+}

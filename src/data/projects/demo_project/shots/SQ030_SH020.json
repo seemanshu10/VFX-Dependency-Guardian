@@ -1,0 +1,19 @@
+{
+  "shot": "SQ030_SH020",
+  "sequence": "SQ030",
+  "name": "SH020",
+  "build": "2026-03-13T11:20:00+00:00",
+  "author": "M.Garcia",
+  "packages": {
+    "env_alley": {
+      "model": "v003",
+      "rig": "v001",
+      "texture": "v002",
+      "shader": "v001",
+      "lookdev": "v003",
+      "layout": "v002",
+      "scatter": "v001",
+      "proxy": "v002"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "shot": "SQ060_SH010",
+  "sequence": "SQ060",
+  "name": "SH010",
+  "build": "2026-05-18T11:00:00+00:00",
+  "author": "A.Singh",
+  "packages": {
+    "vehicle_jet": {
+      "model": "v002",
+      "texture": "v001",
+      "shader": "v001",
+      "rig": "v001",
+      "lookdev": "v001"
+    },
+    "env_hangar": {
+      "model": "v002",
+      "texture": "v001",
+      "shader": "v001",
+      "lookdev": "v001",
+      "layout": "v001",
+      "proxy": "v001",
+      "scatter": "v001"
+    }
+  }
+}

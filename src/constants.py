@@ -20,6 +20,8 @@ MODE_LABELS = {
         "type_filter":    "Asset Type",
         "search":         "⌕  Search assets...",
         "table_headers":  ["", "ASSET", "TYPE", "STATUS", "ISSUES"],
+        "name_col":       1,
+        "type_col":       2,
     },
     MODE_SHOTS: {
         "all_radio":      "All Shots",
@@ -27,6 +29,8 @@ MODE_LABELS = {
         "single_radio":   "Single Shot",
         "type_filter":    "Sequence",
         "search":         "⌕  Search shots...",
-        "table_headers":  ["", "SHOT", "SEQUENCE", "STATUS", "ISSUES"],
+        "table_headers":  ["", "SEQUENCE", "SHOT", "STATUS", "ISSUES"],
+        "name_col":       2,
+        "type_col":       1,
     },
 }

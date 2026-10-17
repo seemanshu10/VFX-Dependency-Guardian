@@ -1,0 +1,21 @@
+{
+  "shot": "SQ040_SH010",
+  "sequence": "SQ040",
+  "name": "SH010",
+  "build": "2026-03-20T14:00:00+00:00",
+  "author": "T.Hanks",
+  "packages": {
+    "character_A": {
+      "model": "v004",
+      "rig": "v003",
+      "texture": "v002",
+      "shader": "v002",
+      "anim": "v002"
+    },
+    "prop_lamp": {
+      "model": "v001",
+      "texture": "v001",
+      "shader": "v001"
+    }
+  }
+}

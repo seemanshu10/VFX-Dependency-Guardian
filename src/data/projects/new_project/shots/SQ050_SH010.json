@@ -1,0 +1,23 @@
+{
+  "shot": "SQ050_SH010",
+  "sequence": "SQ050",
+  "name": "SH010",
+  "build": "2026-05-12T09:30:00+00:00",
+  "author": "J.Kim",
+  "packages": {
+    "env_hangar": {
+      "model": "v002",
+      "texture": "v001",
+      "shader": "v001",
+      "lookdev": "v001",
+      "layout": "v001",
+      "proxy": "v001",
+      "scatter": "v001"
+    },
+    "prop_helmet": {
+      "model": "v001",
+      "texture": "v001",
+      "shader": "v001"
+    }
+  }
+}

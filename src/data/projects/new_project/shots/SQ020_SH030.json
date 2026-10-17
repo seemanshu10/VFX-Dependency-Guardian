@@ -1,0 +1,23 @@
+{
+  "shot": "SQ020_SH030",
+  "sequence": "SQ020",
+  "name": "SH030",
+  "build": "2026-05-08T10:00:00+00:00",
+  "author": "J.Kim",
+  "packages": {
+    "char_pilot": {
+      "model": "v003",
+      "rig": "v001",
+      "blendshape": "v001",
+      "texture": "v001",
+      "shader": "v001"
+    },
+    "vehicle_jet": {
+      "model": "v002",
+      "texture": "v001",
+      "shader": "v001",
+      "rig": "v001",
+      "lookdev": "v001"
+    }
+  }
+}

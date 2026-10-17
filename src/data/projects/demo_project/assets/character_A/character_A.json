@@ -13,23 +13,13 @@
           "notes": ""
         },
         "v002": {
-          "status": "DEPRECATED",
+          "status": "AVAILABLE",
           "published": "2026-01-15T11:00:00+00:00",
           "author": "a.chen",
           "notes": "Shoulder topology collapses on deform. Do not use."
-        },
-        "v003": {
-          "status": "APPROVED",
-          "published": "2026-01-24T16:00:00+00:00",
-          "author": "a.chen",
-          "notes": ""
-        },
-        "v004": {
-          "status": "APPROVED",
-          "published": "2026-02-02T13:00:00+00:00",
-          "author": "a.chen",
-          "notes": "Silhouette revision, awaiting supervisor review."
         }
+        
+        
       }
     },
     "rig": {

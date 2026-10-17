@@ -279,7 +279,7 @@ QTableWidget::indicator {
     font-weight: 600;
 }
 
-#failedBadge {
+#statusBadge {
     background: #4c1e2a;
     border: 1px solid #7d2d3b;
     border-radius: 10px;

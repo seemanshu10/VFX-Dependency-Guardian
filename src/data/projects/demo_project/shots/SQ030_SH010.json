@@ -1,0 +1,28 @@
+{
+  "shot": "SQ030_SH010",
+  "sequence": "SQ030",
+  "name": "SH010",
+  "build": "2026-03-12T09:45:00+00:00",
+  "author": "M.Garcia",
+  "packages": {
+    "character_A": {
+      "model": "v004",
+      "rig": "v003",
+      "groom": "v002",
+      "texture": "v002",
+      "shader": "v002",
+      "anim": "v002",
+      "cache": "v003"
+    },
+    "character_B": {
+      "model": "v002",
+      "rig": "v004",
+      "groom": "v003",
+      "texture": "v001",
+      "shader": "v002",
+      "cloth": "v002",
+      "anim": "v002",
+      "cache": "v002"
+    }
+  }
+}

@@ -9,6 +9,8 @@ from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
 import qtawesome
 
 from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
+from src.validator import asset_validation, RESULT_OK
+from src.ui.debug_tooltips import show_variable_tooltips  # TEMP
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -16,22 +18,23 @@ class MainWindow(QMainWindow):
     """Main Apllication window interfaces"""
     def __init__(self):
         super().__init__()
-        self.initUI()
+        # TEMP: hover tooltips with variable names; revert to self.initUI() to remove
+        show_variable_tooltips(self, self.initUI)
         
     def initUI(self):
         #set window Size and Properties 
         self.setWindowTitle(APP_TITLE)
         self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.assets = [
-                        ("character_A", "Character", "FAILED", 3),
-                        ("character_B", "Character", "OK", 0),
-                        ("prop_car", "Prop", "OUTDATED", 1),
-                        ("environment_01", "Environment", "OK", 0),
-                        ("vehicle_ship", "Vehicle", "FAILED", 2),
-                        ("set_building", "Set", "OUTDATED", 1),
-                        ("tree_grp", "Vegetation", "OK", 0),
-                        ("fx_smoke", "FX", "INVALID", 1),
-                    ]
+        # self.assets = [
+        #                 ("character_A", "Character", "FAILED", 3),
+        #                 ("character_B", "Character", "OK", 0),
+        #                 ("prop_car", "Prop", "OUTDATED", 1),
+        #                 ("environment_01", "Environment", "OK", 0),
+        #                 ("vehicle_ship", "Vehicle", "FAILED", 2),
+        #                 ("set_building", "Set", "OUTDATED", 1),
+        #                 ("tree_grp", "Vegetation", "OK", 0),
+        #                 ("fx_smoke", "FX", "INVALID", 1),
+        #             ]
 
         
         # set before create_header: the filter combo and table read it
@@ -220,7 +223,7 @@ class MainWindow(QMainWindow):
         self.detail_name = QtWidgets.QLabel()
         self.detail_name.setObjectName("detailTitle")
         self.detail_status = QtWidgets.QLabel("●  ")
-        self.detail_status.setObjectName("failedBadge")
+        self.detail_status.setObjectName("statusBadge")
 
         header.addWidget(self.detail_icon)
         header.addWidget(self.detail_name)
@@ -283,8 +286,9 @@ class MainWindow(QMainWindow):
             return
 
         row = self.details_table_widget.currentRow()
-        asset_name = self.details_table_widget.item(row, 1).text()
-        asset_type = self.details_table_widget.item(row, 2).text()
+        cols = MODE_LABELS[self.current_mode]
+        asset_name = self.details_table_widget.item(row, cols["name_col"]).text()
+        asset_type = self.details_table_widget.item(row, cols["type_col"]).text()
         # status column stays empty until validation has run
         status_item = self.details_table_widget.item(row, 3)
         asset_status = status_item.text() if status_item else "NOT VALIDATED"
@@ -292,12 +296,13 @@ class MainWindow(QMainWindow):
         self.detail_status.setText("●  " + asset_status)
 
         if self.current_mode == MODE_SHOTS:
-            shot_file = self.details_table_widget.item(row, 1).data(Qt.UserRole)
+            shot_file = self.details_table_widget.item(row, cols["name_col"]).data(Qt.UserRole)
             self.set_details_for_shot(project_name, shot_file)
             return
 
+        asset_id = self.details_table_widget.item(row, cols["name_col"]).data(Qt.UserRole)
         self.populate_updates_details_info(asset_name,project_name, asset_type)
-        self.set_details_report_for_asset(project_name, asset_name)
+        self.set_details_report_for_asset(project_name, asset_id)
 
     def set_details_for_shot(self, project_name, shot_file):
         shot_data = load_json(shot_file)
@@ -307,7 +312,7 @@ class MainWindow(QMainWindow):
                     f"Project:  {project_name}\n"
                     f"Build:  {shot_data['build']}\n"
                     f"Author:  {shot_data['author']}\n"
-                    f"Path:  /shots/{Path(shot_file).name}"
+                    # f"Path:  /shots/{Path(shot_file).name}"
                 )
 
         # shot tier: expected = highest version in the asset's package JSON, whatever its status
@@ -366,42 +371,41 @@ class MainWindow(QMainWindow):
         self.report.setPlainText(report)
 
     def set_details_report_for_asset(self, project_name, asset):
-        if asset == "character_A":
-            deps = [
-                ("model", "v002", "v008", "OUTDATED"),
-                ("rig", "v001", "v004", "OUTDATED"),
-                ("texture", "v005", "v005", "OK"),
-                ("groom", "-", "v002", "MISSING"),
-            ]
+        # asset tier: each component's latest version, checked against the latest of its upstream
+        asset_report = asset_validation(project_name, asset)[asset]
 
-            report = (
-                "asset:    character_A\n"
-                f"project:  {project_name}\n"
-                "status:   FAILED\n\n"
-                "components:\n\n"
-                " - model:\n"
-                "     current:  v002\n"
-                "     expected: v008\n"
-                "     status:   OUTDATED\n"
-                "     message:  Using older version. Update required.\n\n"
-                " - rig:\n"
-                "     current:  v001\n"
-                "     expected: v004\n"
-                "     status:   OUTDATED\n"
-                "     message:  Using older version. Update required."
-            )
+        # (component, current, expected, status) per row; current = upstream version it was built on
+        deps = []
+        report_lines = []
+        for component, result in asset_report.items():
+            if not result["dependencies"]:
+                # root component (e.g. model): nothing upstream to be out of date with
+                deps.append((f"{component} ", result["version"], result["version"], RESULT_OK))
+                continue
+
+            for dep_component, edge in result["dependencies"].items():
+                expected = edge["latest_available"] or "-"
+                deps.append((f"{component} ",
+                             edge["built_on"], expected, edge["result"]))
+
+                if edge["result"] != RESULT_OK:
+                    report_lines.append(
+                        f" - {component}  / {dep_component}:\n"
+                        f"     built on: {edge['built_on']}\n"
+                        f"     latest:   {expected}\n"
+                        f"     status:   {edge['result']}\n"
+                    )
+
+        asset_status = "FAILED" if report_lines else "OK"
+        report = (
+            f"asset:    {asset}\n"
+            f"project:  {project_name}\n"
+            f"status:   {asset_status}\n\n"
+        )
+        if report_lines:
+            report += "dependencies:\n\n" + "\n".join(report_lines)
         else:
-            deps = [
-                ("model", "v005", "v005", "OK"),
-                ("rig", "v003", "v003", "OK"),
-                ("texture", "v008", "v008", "OK"),
-            ]
-            report = (
-                f"asset:    {asset}\n"
-                f"project:  {project_name}\n"
-                "status:   OK\n\n"
-                "All registered dependencies match the approved versions."
-            ).format(asset)
+            report += "Every component is built on the latest version of its upstream."
 
         self.dependency_table_widget.setRowCount(0)
 
@@ -529,20 +533,21 @@ class MainWindow(QMainWindow):
         project_name = self.project_name_combobox.currentText()
         selected_type = self.asset_type_combobox.currentText()
 
-        # (name, type, file) per row: type is the asset type, or the sequence in shots mode
+        # (name, type, key) per row: type is the asset type or the sequence,
+        # key is the shot file or the registry asset id (display name != id)
         rows = []
         if self.current_mode == MODE_SHOTS:
             for shot_file in get_shot_files(project_name):
                 shot_data = load_json(shot_file)
-                rows.append((shot_data["shot"], shot_data["sequence"], str(shot_file)))
+                rows.append((shot_data["name"], shot_data["sequence"], str(shot_file)))
         else:
             registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
             # print(registry_data)
             for asset_id in registry_data["assets"]:
                 rows.append((registry_data["assets"][asset_id]["name"],
-                             registry_data["assets"][asset_id]["type"], None))
+                             registry_data["assets"][asset_id]["type"], asset_id))
 
-        for asset_name, asset_type, source_file in rows:
+        for asset_name, asset_type, row_key in rows:
             if selected_type != "All" and asset_type != selected_type:
                 continue
 
@@ -557,14 +562,15 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row, 0, check_box)
 
             asset_name_item = QTableWidgetItem(asset_name)
-            # remember which file the row came from, so the details panel can load it
-            asset_name_item.setData(Qt.UserRole, source_file)
+            # remember the shot file / asset id, so the details panel can load it
+            asset_name_item.setData(Qt.UserRole, row_key)
             asset_type_item = QTableWidgetItem(asset_type)
             # asset_status_item = QTableWidgetItem(status)
             # asset_issues_item = QTableWidgetItem(str(issues))
 
-            self.details_table_widget.setItem(row , 1 ,asset_name_item)
-            self.details_table_widget.setItem(row , 2 ,asset_type_item)
+            cols = MODE_LABELS[self.current_mode]
+            self.details_table_widget.setItem(row , cols["name_col"] ,asset_name_item)
+            self.details_table_widget.setItem(row , cols["type_col"] ,asset_type_item)
             # self.details_table_widget.setItem(row , 3 ,asset_status_item)
             # self.details_table_widget.setItem(row , 4 ,asset_issues_item)
 
