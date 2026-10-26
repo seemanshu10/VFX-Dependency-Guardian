@@ -762,6 +762,20 @@
               }
             }
           }
+        },
+        "lookdev": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-02-04T10:00:00+00:00",
+              "author": "l.novak",
+              "notes": "Built against a shader that was never published for this asset.",
+              "dependencies": {
+                "model": "v001",
+                "shader": "v001"
+              }
+            }
+          }
         }
       }
     },
@@ -815,6 +829,19 @@
               "notes": "",
               "dependencies": {
                 "model": "v001"
+              }
+            }
+          }
+        },
+        "scatter": {
+          "versions": {
+            "v001": {
+              "status": "PENDING",
+              "published": "2026-02-09T10:00:00+00:00",
+              "author": "t.brandt",
+              "notes": "Built on a local model v002 that was never published.",
+              "dependencies": {
+                "model": "v002"
               }
             }
           }
@@ -981,6 +1008,16 @@
               "notes": "",
               "dependencies": {
                 "painting": "v001"
+              }
+            },
+            "v002": {
+              "status": "PENDING",
+              "published": "2026-02-26T10:00:00+00:00",
+              "author": "e.moreau",
+              "notes": "Reprojected through the shot camera.",
+              "dependencies": {
+                "painting": "v001",
+                "camera": "v001"
               }
             }
           }

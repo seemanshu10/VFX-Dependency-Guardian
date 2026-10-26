@@ -14,6 +14,10 @@ from src.data_loader import load_json, json_file_find_path, get_project_folder
 RESULT_OK       = "OK"
 RESULT_OUTDATED = "OUTDATED"
 RESULT_MISSING  = "MISSING"
+RESULT_INVALID  = "INVALID"   # points at a version that was never published
+
+# per-asset / per-shot outcome: OK only when every dependency is OK
+RESULT_FAILED   = "FAILED"
 
 
 def get_latest_version(asset_data, component):
@@ -27,9 +31,11 @@ def get_latest_version(asset_data, component):
     return latest, versions[latest]["status"]
 
 
-def get_result(found_version, expected_version):
+def get_result(found_version, expected_version, published_versions=None):
     if expected_version is None:
         return RESULT_MISSING
+    if published_versions is not None and found_version not in published_versions:
+        return RESULT_INVALID
     if found_version == expected_version:
         return RESULT_OK
     return RESULT_OUTDATED
@@ -54,12 +60,13 @@ def compare_shot_to_packages(project_name, packages_data) -> dict:
 
         for component, shot_version in shot_components.items():
             latest_version, latest_status = get_latest_version(asset_data, component)
+            published = asset_data["components"].get(component, {}).get("versions", {})
             report[asset_name][component] = {
                 "shot_version": shot_version,
                 "latest_version": latest_version,
                 "latest_status": latest_status,
                 "match": shot_version == latest_version,
-                "result": get_result(shot_version, latest_version),
+                "result": get_result(shot_version, latest_version, published),
             }
 
     return report
@@ -91,11 +98,12 @@ def compare_asset_components(asset_data) -> dict:
 
         for dep_component, built_on in version_data.get("dependencies", {}).items():
             dep_latest = latest_map.get(dep_component)
+            published = asset_data["components"].get(dep_component, {}).get("versions", {})
             dependencies[dep_component] = {
                 "built_on": built_on,
                 "latest_available": dep_latest,
                 "match": built_on == dep_latest,
-                "result": get_result(built_on, dep_latest),
+                "result": get_result(built_on, dep_latest, published),
             }
 
         report[component] = {
@@ -137,6 +145,10 @@ def asset_issue_count(asset_report) -> int:
                for result in asset_report.values()
                for edge in result["dependencies"].values()
                if edge["result"] != RESULT_OK)
+
+
+def overall_status(issue_count) -> str:
+    return RESULT_OK if issue_count == 0 else RESULT_FAILED
 
 
 # ------------------------------------------------------------------------

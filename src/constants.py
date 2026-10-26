@@ -11,7 +11,6 @@ ASSET_TYPE = ["All", "Character", "Prop", "Environment", "FX"]
 # Text that changes when switching between the Assets and Shots tabs
 MODE_ASSETS = "assets"
 MODE_SHOTS  = "shots"
-
 MODE_LABELS = {
     MODE_ASSETS: {
         "all_radio":      "All  Assets",

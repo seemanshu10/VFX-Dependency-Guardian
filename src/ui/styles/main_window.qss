@@ -279,14 +279,51 @@ QTableWidget::indicator {
     font-weight: 600;
 }
 
+/* Details header badge; colour comes from the shared [status] rules below */
 #statusBadge {
-    background: #4c1e2a;
-    border: 1px solid #7d2d3b;
+    background: #12283d;
+    border: 1px solid #2a4a68;
     border-radius: 10px;
-    color: #ff6670;
+    color: #7c9fc4;
     padding: 4px 9px;
     font-size: 11px;
     font-weight: 600;
+}
+
+/* Table STATUS cells: same box as #statusBadge, coloured per status */
+#statusCell {
+    background: transparent;
+}
+
+#depStatusBadge {
+    background: #12283d;
+    border: 1px solid #2a4a68;
+    border-radius: 10px;
+    color: #7c9fc4;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+#statusBadge[status="OK"],
+#depStatusBadge[status="OK"] {
+    background: #0f3a2a;
+    border: 1px solid #1c6b48;
+    color: #23d47b;
+}
+
+#statusBadge[status="FAILED"],
+#depStatusBadge[status="FAILED"],
+#depStatusBadge[status="OUTDATED"] {
+    background: #4c1e2a;
+    border: 1px solid #7d2d3b;
+    color: #ff6670;
+}
+
+#depStatusBadge[status="MISSING"] {
+    background: #262d35;
+    border: 1px solid #47515d;
+    color: #a3adb8;
 }
 
 #detailInfo {
@@ -317,18 +354,56 @@ QTableWidget::indicator {
     padding: 8px;
 }
 
+/* Slim scrollbars: transparent track, rounded handle that brightens on hover */
 QScrollBar:vertical {
-    background: #071a2c;
-    width: 9px;
-    margin: 2px;
+    background: transparent;
+    width: 8px;
+    margin: 2px 1px;
+    border: none;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 8px;
+    margin: 1px 2px;
+    border: none;
 }
 
 QScrollBar::handle:vertical {
-    background: #214d70;
-    border-radius: 4px;
+    background: #1d4566;
+    border-radius: 3px;
     min-height: 30px;
 }
 
+QScrollBar::handle:horizontal {
+    background: #1d4566;
+    border-radius: 3px;
+    min-width: 30px;
+}
+
+QScrollBar::handle:hover {
+    background: #2b6894;
+}
+
+QScrollBar::handle:pressed {
+    background: #3a85bd;
+}
+
+/* no arrow buttons */
 QScrollBar::add-line, QScrollBar::sub-line {
+    width: 0px;
     height: 0px;
+    border: none;
+    background: none;
+}
+
+/* the empty track either side of the handle: Qt's default is a grey checker pattern */
+QScrollBar::add-page, QScrollBar::sub-page {
+    background: none;
+}
+
+/* square where a vertical and a horizontal scrollbar meet */
+QAbstractScrollArea::corner {
+    background: transparent;
+    border: none;
 }

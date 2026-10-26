@@ -21,6 +21,12 @@
               "author": "a.chen",
               "notes": "Costume pass for this show.",
               "dependencies": {}
+            },
+            "v003": {
+            "status": "APPROVED",
+            "published": "2026-04-20T15:30:00+00:00",
+            "author": "a.chen",
+            "notes": "Costume pass for this show."
             }
           }
         },
@@ -28,6 +34,15 @@
           "versions": {
             "v001": {
               "status": "APPROVED",
+              "published": "2026-04-06T11:00:00+00:00",
+              "author": "m.okafor",
+              "notes": "Built before the costume model update.",
+              "dependencies": {
+                "model": "v001"
+              }
+            },
+            "v002": {
+              "status": "AVAILABLE",
               "published": "2026-04-06T11:00:00+00:00",
               "author": "m.okafor",
               "notes": "Built before the costume model update.",

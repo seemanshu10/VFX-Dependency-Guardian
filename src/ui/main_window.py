@@ -3,16 +3,24 @@ from pathlib import Path
 
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem)
-from PySide2.QtCore import Qt, Slot
+from PySide2.QtCore import Qt, Slot, QSize
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
 import qtawesome
 
 from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
-from src.validator import asset_validation, RESULT_OK
+from src.validator import (asset_validation, shot_validation, asset_issue_count,
+                           shot_issue_count, overall_status, RESULT_OK)
 from src.ui.debug_tooltips import show_variable_tooltips  # TEMP
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
+
+
+class StatusItem(QTableWidgetItem):
+    """Text-less item under a status badge. Holds the status in UserRole and sorts by it."""
+    def __lt__(self, other):
+        return (self.data(Qt.UserRole) or "") < (other.data(Qt.UserRole) or "")
+
 
 class MainWindow(QMainWindow):
     """Main Apllication window interfaces"""
@@ -44,9 +52,10 @@ class MainWindow(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.create_header()
+        # style first: the status badges measure their size from the QSS when the table fills
+        self.apply_style()
         self.populate_table()
         # self.get_asset_types()
-        self.apply_style()
 
     def create_header(self):
         # create menu BAr
@@ -253,7 +262,7 @@ class MainWindow(QMainWindow):
         self.dependency_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
 
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
-                0, QtWidgets.QHeaderView.Stretch
+                0, QtWidgets.QHeaderView.ResizeToContents
             )
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
                 1, QtWidgets.QHeaderView.ResizeToContents
@@ -264,6 +273,7 @@ class MainWindow(QMainWindow):
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
                 3, QtWidgets.QHeaderView.ResizeToContents
             )
+        self.dependency_table_widget.verticalHeader().setDefaultSectionSize(44)
 
         details_main_layout.addWidget(self.dependency_table_widget)
         report_title = QtWidgets.QLabel("Detailed Report")
@@ -289,11 +299,11 @@ class MainWindow(QMainWindow):
         cols = MODE_LABELS[self.current_mode]
         asset_name = self.details_table_widget.item(row, cols["name_col"]).text()
         asset_type = self.details_table_widget.item(row, cols["type_col"]).text()
-        # status column stays empty until validation has run
+        # same OK / FAILED that populate_table put in the row's status badge
         status_item = self.details_table_widget.item(row, 3)
-        asset_status = status_item.text() if status_item else "NOT VALIDATED"
+        asset_status = status_item.data(Qt.UserRole) if status_item else ""
         self.detail_name.setText(asset_name)
-        self.detail_status.setText("●  " + asset_status)
+        self.set_detail_status(asset_status)
 
         if self.current_mode == MODE_SHOTS:
             shot_file = self.details_table_widget.item(row, cols["name_col"]).data(Qt.UserRole)
@@ -347,7 +357,7 @@ class MainWindow(QMainWindow):
             self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(f"{asset} / {component}"))
             self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
             self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
-            self.dependency_table_widget.setItem(row, 3, QTableWidgetItem("* " + status))
+            self.set_status_badge(self.dependency_table_widget, row, 3, status)
 
             if status != "OK":
                 report_lines.append(
@@ -416,9 +426,7 @@ class MainWindow(QMainWindow):
             self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(component))
             self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
             self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
-            
-            status_item = QTableWidgetItem("* " + status)
-            self.dependency_table_widget.setItem(row, 3, status_item)
+            self.set_status_badge(self.dependency_table_widget, row, 3, status)
 
         self.report.setPlainText(report)
 
@@ -435,6 +443,38 @@ class MainWindow(QMainWindow):
         box.addWidget(combo)
 
         return box, combo
+
+    def set_status_badge(self, table, row, column, status):
+        # a table item can't draw a box, so the cell holds a QLabel styled like detail_status
+        badge = QLabel("●  " + status)
+        badge.setObjectName("depStatusBadge")
+        badge.setProperty("status", status)  # picks the colour variant in the QSS
+
+        # wrapper keeps the badge sized to its text instead of stretching over the cell
+        cell = QWidget()
+        cell.setObjectName("statusCell")
+        layout = QHBoxLayout(cell)
+        # no margins: the item padding below already lines the badge up with the other columns' text
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(badge, 0, Qt.AlignVCenter)
+        layout.addStretch()
+
+        table.setCellWidget(row, column, cell)
+
+        # ResizeToContents only measures items, not cell widgets: an empty item carrying
+        
+        cell.ensurePolished()
+        size_item = StatusItem()
+        size_item.setData(Qt.UserRole, status)
+        size_item.setSizeHint(cell.sizeHint() + QSize(2 * 8, 0))
+        table.setItem(row, column, size_item)
+
+    def set_detail_status(self, status):
+        self.detail_status.setText("●  " + status)
+        self.detail_status.setProperty("status", status)
+        # re-polish so the [status="..."] selector is re-evaluated
+        self.detail_status.style().unpolish(self.detail_status)
+        self.detail_status.style().polish(self.detail_status)
 
     def create_summary(self):
         frame = QFrame()
@@ -521,7 +561,7 @@ class MainWindow(QMainWindow):
     def clear_details(self):
         # the old selection belonged to the previous project
         self.detail_name.setText("")
-        self.detail_status.setText("●  ")
+        self.set_detail_status("")
         self.info.setText("")
         self.dependency_table_widget.setRowCount(0)
         self.report.clear()
@@ -533,21 +573,23 @@ class MainWindow(QMainWindow):
         project_name = self.project_name_combobox.currentText()
         selected_type = self.asset_type_combobox.currentText()
 
-        # (name, type, key) per row: type is the asset type or the sequence,
-        # key is the shot file or the registry asset id (display name != id)
+        # (name, type, key, issues) per row: type is the asset type or the sequence,
         rows = []
         if self.current_mode == MODE_SHOTS:
             for shot_file in get_shot_files(project_name):
                 shot_data = load_json(shot_file)
-                rows.append((shot_data["name"], shot_data["sequence"], str(shot_file)))
+                issues = shot_issue_count(shot_validation(project_name, shot_file))
+                rows.append((shot_data["name"], shot_data["sequence"], str(shot_file), issues))
         else:
             registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
-            # print(registry_data)
+            # one pass over the registry validates every asset
+            asset_reports = asset_validation(project_name)
             for asset_id in registry_data["assets"]:
+                issues = asset_issue_count(asset_reports[asset_id])
                 rows.append((registry_data["assets"][asset_id]["name"],
-                             registry_data["assets"][asset_id]["type"], asset_id))
+                             registry_data["assets"][asset_id]["type"], asset_id, issues))
 
-        for asset_name, asset_type, row_key in rows:
+        for asset_name, asset_type, row_key, issues in rows:
             if selected_type != "All" and asset_type != selected_type:
                 continue
 
@@ -555,7 +597,8 @@ class MainWindow(QMainWindow):
 
             row = self.details_table_widget.rowCount()
             self.details_table_widget.insertRow(row)
-            self.details_table_widget.setRowHeight(row, 30)
+            # status badge (21) + the QSS item padding (8 top + 8 bottom) + grid line, with a little spare
+            self.details_table_widget.setRowHeight(row, 40)
             
             check_box = QTableWidgetItem()
             check_box.setCheckState(Qt.Unchecked)
@@ -565,14 +608,16 @@ class MainWindow(QMainWindow):
             # remember the shot file / asset id, so the details panel can load it
             asset_name_item.setData(Qt.UserRole, row_key)
             asset_type_item = QTableWidgetItem(asset_type)
-            # asset_status_item = QTableWidgetItem(status)
-            # asset_issues_item = QTableWidgetItem(str(issues))
+            # int, not str, so the column sorts 2 < 10
+            asset_issues_item = QTableWidgetItem()
+            asset_issues_item.setData(Qt.DisplayRole, issues)
+            asset_issues_item.setTextAlignment(Qt.AlignCenter)
 
             cols = MODE_LABELS[self.current_mode]
             self.details_table_widget.setItem(row , cols["name_col"] ,asset_name_item)
             self.details_table_widget.setItem(row , cols["type_col"] ,asset_type_item)
-            # self.details_table_widget.setItem(row , 3 ,asset_status_item)
-            # self.details_table_widget.setItem(row , 4 ,asset_issues_item)
+            self.set_status_badge(self.details_table_widget, row, 3, overall_status(issues))
+            self.details_table_widget.setItem(row , 4 ,asset_issues_item)
 
         self.details_table_widget.setSortingEnabled(True)
 
