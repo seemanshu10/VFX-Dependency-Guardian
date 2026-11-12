@@ -1,9 +1,10 @@
 """Main Entry Point For UI"""
 from pathlib import Path
 
-from PySide2 import QtWidgets
-from PySide2.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem)
-from PySide2.QtCore import Qt, Slot, QSize
+from PySide6 import QtWidgets
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem)
+from PySide6.QtCore import Qt, Slot, QSize
+
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
 import qtawesome

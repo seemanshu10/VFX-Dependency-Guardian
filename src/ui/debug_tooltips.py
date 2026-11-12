@@ -4,8 +4,7 @@ Remove by deleting this file and restoring `self.initUI()` in MainWindow.__init_
 """
 import sys
 
-from PySide2.QtWidgets import QWidget, QLayout
-
+from PySide6.QtWidgets import QWidget, QLayout
 
 def show_variable_tooltips(window, build_func):
     """Run build_func, then give every widget a tooltip with its variable name and layout chain."""
