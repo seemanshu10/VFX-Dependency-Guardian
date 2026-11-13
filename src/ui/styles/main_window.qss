@@ -152,8 +152,27 @@ QRadioButton {
 }
 
 QRadioButton::indicator {
-    width: 17px;
-    height: 17px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #4f7ea8;
+    border-radius: 9px;
+    background: #071c30;
+}
+
+QRadioButton::indicator:hover {
+    border: 2px solid #2b8cff;
+}
+
+/* checked: blue ring with a bright inner dot (gradient draws the dot) */
+QRadioButton::indicator:checked {
+    border: 2px solid #168cff;
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,
+                                stop:0 #ffffff, stop:0.45 #ffffff,
+                                stop:0.55 #168cff, stop:1 #168cff);
+}
+
+QRadioButton:checked {
+    color: #ffffff;
 }
 
 #runButton {

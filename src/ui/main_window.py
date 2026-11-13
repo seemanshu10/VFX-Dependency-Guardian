@@ -6,13 +6,13 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtCore import Qt, Slot, QSize
 
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
-                           MODE_ASSETS, MODE_SHOTS, MODE_LABELS)
+                           MODE_ASSETS, MODE_SHOTS, MODE_LABELS,
+                           STATUS_TOOLTIPS, SUMMARY_TOOLTIPS)
 import qtawesome
 
 from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
 from src.validator import (asset_validation, shot_validation, asset_issue_count,
                            shot_issue_count, overall_status, RESULT_OK)
-from src.ui.debug_tooltips import show_variable_tooltips  # TEMP
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -20,15 +20,14 @@ STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 class StatusItem(QTableWidgetItem):
     """Text-less item under a status badge. Holds the status in UserRole and sorts by it."""
     def __lt__(self, other):
-        return (self.data(Qt.UserRole) or "") < (other.data(Qt.UserRole) or "")
+        return (self.data(Qt.ItemDataRole.UserRole) or "") < (other.data(Qt.ItemDataRole.UserRole) or "")
 
 
 class MainWindow(QMainWindow):
     """Main Apllication window interfaces"""
     def __init__(self):
         super().__init__()
-        # TEMP: hover tooltips with variable names; revert to self.initUI() to remove
-        show_variable_tooltips(self, self.initUI)
+        self.initUI()
         
     def initUI(self):
         #set window Size and Properties 
@@ -56,6 +55,7 @@ class MainWindow(QMainWindow):
         # style first: the status badges measure their size from the QSS when the table fills
         self.apply_style()
         self.populate_table()
+        self.set_mode_tooltips(self.current_mode)
         # self.get_asset_types()
 
     def create_header(self):
@@ -85,6 +85,10 @@ class MainWindow(QMainWindow):
         self.asset_btn.setObjectName("modeTab")
         self.shots_btn.setObjectName("modeTab")
         self.asset_btn.setProperty("active", True)
+        self.asset_btn.setToolTip("Check published assets (characters, props, sets...).\n"
+                                  "Shows whether each asset is built on the newest versions of its parts.")
+        self.shots_btn.setToolTip("Check shots.\n"
+                                  "Shows whether each shot uses the newest published version of every asset in it.")
 
         self.asset_btn.clicked.connect(lambda: self.switch_mode(self.asset_btn, self.shots_btn))
         self.shots_btn.clicked.connect(lambda: self.switch_mode(self.shots_btn, self.asset_btn))
@@ -106,6 +110,7 @@ class MainWindow(QMainWindow):
         validation_scope_main_box = QVBoxLayout()
         scope_label = QLabel("Validation Scope")
         scope_label.setObjectName("fieldLabel")
+        scope_label.setToolTip("Choose which items the report should cover.")
 
         radio_box = QHBoxLayout()
         self.all_radio = QRadioButton("All Assets")
@@ -120,10 +125,12 @@ class MainWindow(QMainWindow):
         validation_scope_main_box.addLayout(radio_box)
 
         validation_layout.addLayout(validation_scope_main_box, 0)
-        validation_layout.addWidget(self.line_creation(QFrame.VLine))
+        validation_layout.addWidget(self.line_creation(QFrame.Shape.VLine))
 
         # adding Comboboxes 
         self.project_type_layout, self.project_name_combobox = self.combobox_build("Project", get_all_folder_list())
+        self.project_name_combobox.setToolTip("Choose the project to check.\n"
+                                              "The table below reloads with that project's items.")
         validation_layout.addLayout(self.project_type_layout, 1)
 
         self.asset_type_layout, self.asset_type_combobox = self.combobox_build("Asset Type", self.get_asset_types())
@@ -131,10 +138,12 @@ class MainWindow(QMainWindow):
         self.asset_type_label = self.asset_type_layout.itemAt(0).widget()
         validation_layout.addLayout(self.asset_type_layout, 1)
         
-        validation_layout.addWidget(self.line_creation(QFrame.VLine))
+        validation_layout.addWidget(self.line_creation(QFrame.Shape.VLine))
         run_btn = QPushButton("Generate Validation Report")
         run_btn.setIcon(qtawesome.icon('mdi.export', color = 'black'))
         run_btn.setObjectName("runButton")
+        run_btn.setToolTip("Create a report listing everything that is out of date or broken\n"
+                           "for the items chosen in Validation Scope.")
         validation_layout.addWidget(run_btn)
         run_btn.setMinimumWidth(174)
         run_btn.setMinimumHeight(44)
@@ -154,7 +163,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------------
 
     def create_main_area(self):
-        main_area_splitter = QSplitter(Qt.Horizontal)
+        main_area_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_area_splitter.addWidget(self.create_validation_results_panel())
         main_area_splitter.addWidget(self.create_details_panel())
 
@@ -191,16 +200,16 @@ class MainWindow(QMainWindow):
         self.details_header_labels = ["", "ASSET", "TYPE", "STATUS", "ISSUES"]
         self.details_table_widget.setHorizontalHeaderLabels(self.details_header_labels)
         self.details_table_widget.setColumnWidth(10, 42)
-        self.details_table_widget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.details_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.details_table_widget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.details_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.details_table_widget.setSortingEnabled(True)
 
         header = self.details_table_widget.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
 
         # Sort indicator 
         header.setSortIndicatorShown(False)
@@ -234,6 +243,7 @@ class MainWindow(QMainWindow):
         self.detail_name.setObjectName("detailTitle")
         self.detail_status = QtWidgets.QLabel("●  ")
         self.detail_status.setObjectName("statusBadge")
+        self.detail_name.setToolTip("The item you clicked in the table.")
 
         header.addWidget(self.detail_icon)
         header.addWidget(self.detail_name)
@@ -246,7 +256,7 @@ class MainWindow(QMainWindow):
 
         details_main_layout.addLayout(header)
         details_main_layout.addWidget(self.info)
-        detail_line = self.line_creation(QFrame.HLine)
+        detail_line = self.line_creation(QFrame.Shape.HLine)
         detail_line.setObjectName("detailLine")
         details_main_layout.addWidget(detail_line)
 
@@ -260,19 +270,19 @@ class MainWindow(QMainWindow):
                     ["COMPONENT", "CURRENT", "EXPECTED", "STATUS"]
                 )
         self.dependency_table_widget.setShowGrid(True)
-        self.dependency_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.dependency_table_widget.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
-                0, QtWidgets.QHeaderView.ResizeToContents
+                0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
             )
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
-                1, QtWidgets.QHeaderView.ResizeToContents
+                1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
             )
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
-                2, QtWidgets.QHeaderView.ResizeToContents
+                2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
             )
         self.dependency_table_widget.horizontalHeader().setSectionResizeMode(
-                3, QtWidgets.QHeaderView.ResizeToContents
+                3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
             )
         self.dependency_table_widget.verticalHeader().setDefaultSectionSize(44)
 
@@ -284,6 +294,8 @@ class MainWindow(QMainWindow):
         self.report = QtWidgets.QPlainTextEdit()
         self.report.setReadOnly(True)
         self.report.setObjectName("reportBox")
+        self.report.setToolTip("A plain-text summary of the problems found for this item.\n"
+                               "You can select and copy it.")
         details_main_layout.addWidget(self.report, 1)
 
         return frame
@@ -302,16 +314,16 @@ class MainWindow(QMainWindow):
         asset_type = self.details_table_widget.item(row, cols["type_col"]).text()
         # same OK / FAILED that populate_table put in the row's status badge
         status_item = self.details_table_widget.item(row, 3)
-        asset_status = status_item.data(Qt.UserRole) if status_item else ""
+        asset_status = status_item.data(Qt.ItemDataRole.UserRole) if status_item else ""
         self.detail_name.setText(asset_name)
         self.set_detail_status(asset_status)
 
         if self.current_mode == MODE_SHOTS:
-            shot_file = self.details_table_widget.item(row, cols["name_col"]).data(Qt.UserRole)
+            shot_file = self.details_table_widget.item(row, cols["name_col"]).data(Qt.ItemDataRole.UserRole)
             self.set_details_for_shot(project_name, shot_file)
             return
 
-        asset_id = self.details_table_widget.item(row, cols["name_col"]).data(Qt.UserRole)
+        asset_id = self.details_table_widget.item(row, cols["name_col"]).data(Qt.ItemDataRole.UserRole)
         self.populate_updates_details_info(asset_name,project_name, asset_type)
         self.set_details_report_for_asset(project_name, asset_id)
 
@@ -450,6 +462,7 @@ class MainWindow(QMainWindow):
         badge = QLabel("●  " + status)
         badge.setObjectName("depStatusBadge")
         badge.setProperty("status", status)  # picks the colour variant in the QSS
+        badge.setToolTip(STATUS_TOOLTIPS.get(status, ""))
 
         # wrapper keeps the badge sized to its text instead of stretching over the cell
         cell = QWidget()
@@ -457,7 +470,7 @@ class MainWindow(QMainWindow):
         layout = QHBoxLayout(cell)
         # no margins: the item padding below already lines the badge up with the other columns' text
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(badge, 0, Qt.AlignVCenter)
+        layout.addWidget(badge, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addStretch()
 
         table.setCellWidget(row, column, cell)
@@ -466,13 +479,14 @@ class MainWindow(QMainWindow):
         
         cell.ensurePolished()
         size_item = StatusItem()
-        size_item.setData(Qt.UserRole, status)
+        size_item.setData(Qt.ItemDataRole.UserRole, status)
         size_item.setSizeHint(cell.sizeHint() + QSize(2 * 8, 0))
         table.setItem(row, column, size_item)
 
     def set_detail_status(self, status):
         self.detail_status.setText("●  " + status)
         self.detail_status.setProperty("status", status)
+        self.detail_status.setToolTip(STATUS_TOOLTIPS.get(status, ""))
         # re-polish so the [status="..."] selector is re-evaluated
         self.detail_status.style().unpolish(self.detail_status)
         self.detail_status.style().polish(self.detail_status)
@@ -485,6 +499,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(18, 10, 18, 10)
         validation_label = QLabel("Validation Summary")
         validation_label.setObjectName("panelTitle")
+        validation_label.setToolTip("How many items are in each state.")
         layout.addWidget(validation_label) 
         values = [
             ("mdi.check-circle", "#23d47b", "124", "OK", "ok"),
@@ -496,6 +511,7 @@ class MainWindow(QMainWindow):
         for i, (icon_name, color, number, label, state) in enumerate(values):
             item = QWidget()
             item.setObjectName("summaryItem")
+            item.setToolTip(SUMMARY_TOOLTIPS[state])
             item_layout = QHBoxLayout(item)
             item_layout.setContentsMargins(0, 0, 0, 0)
             item_layout.setSpacing(4)
@@ -523,7 +539,7 @@ class MainWindow(QMainWindow):
 
             if i < len(values) - 1:
                 line = QFrame()
-                line.setFrameShape(QFrame.VLine)
+                line.setFrameShape(QFrame.Shape.VLine)
                 line.setObjectName("summaryLine")
                 layout.addWidget(line)
 
@@ -602,17 +618,17 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setRowHeight(row, 40)
             
             check_box = QTableWidgetItem()
-            check_box.setCheckState(Qt.Unchecked)
+            check_box.setCheckState(Qt.CheckState.Unchecked)
             self.details_table_widget.setItem(row, 0, check_box)
 
             asset_name_item = QTableWidgetItem(asset_name)
             # remember the shot file / asset id, so the details panel can load it
-            asset_name_item.setData(Qt.UserRole, row_key)
+            asset_name_item.setData(Qt.ItemDataRole.UserRole, row_key)
             asset_type_item = QTableWidgetItem(asset_type)
             # int, not str, so the column sorts 2 < 10
             asset_issues_item = QTableWidgetItem()
-            asset_issues_item.setData(Qt.DisplayRole, issues)
-            asset_issues_item.setTextAlignment(Qt.AlignCenter)
+            asset_issues_item.setData(Qt.ItemDataRole.DisplayRole, issues)
+            asset_issues_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
             cols = MODE_LABELS[self.current_mode]
             self.details_table_widget.setItem(row , cols["name_col"] ,asset_name_item)
@@ -632,7 +648,7 @@ class MainWindow(QMainWindow):
 
     @Slot(int, Qt.SortOrder)
     def update_sort_arrow(self, column, order):
-        arrow = " ▲" if order == Qt.AscendingOrder else " ▼"
+        arrow = " ▲" if order == Qt.SortOrder.AscendingOrder else " ▼"
         labels = list(self.details_header_labels)
         # column can be out of range before the user has sorted anything
         if 0 <= column < len(labels) and labels[column]:
@@ -666,11 +682,31 @@ class MainWindow(QMainWindow):
         # self.single_radio.setText(labels["single_radio"])
         self.asset_type_label.setText(labels["type_filter"])
         self.search_box.setPlaceholderText(labels["search"])
+        self.set_mode_tooltips(mode)
 
         # re-apply through update_sort_arrow so the ▲/▼ stays on the sorted column
         self.details_header_labels = list(labels["table_headers"])
         header = self.details_table_widget.horizontalHeader()
         self.update_sort_arrow(header.sortIndicatorSection(), header.sortIndicatorOrder())
+
+    def set_mode_tooltips(self, mode):
+        """Hover text for widgets whose meaning changes with the mode. Text lives in MODE_LABELS."""
+        tips = MODE_LABELS[mode]["tooltips"]
+
+        self.all_radio.setToolTip(tips["all_radio"])
+        self.selected_radio.setToolTip(tips["selected_radio"])
+        self.asset_type_combobox.setToolTip(tips["type_filter"])
+        self.search_box.setToolTip(tips["search"])
+        self.details_table_widget.setToolTip(tips["table"])
+        self.dependency_table_widget.setToolTip(tips["dependency_table"])
+
+        # header items survive setHorizontalHeaderLabels, so setting them here is enough
+        for table, key in ((self.details_table_widget, "headers"),
+                           (self.dependency_table_widget, "dependency_headers")):
+            for column, tip in enumerate(tips[key]):
+                header_item = table.horizontalHeaderItem(column)
+                if header_item is not None:
+                    header_item.setToolTip(tip)
 
     def get_asset_types(self):
         project_name = self.project_name_combobox.currentText()
