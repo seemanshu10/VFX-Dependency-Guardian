@@ -93,8 +93,8 @@ STATUS_TOOLTIPS = {
 
 # Hover text for the counters in the Validation Summary bar
 SUMMARY_TOOLTIPS = {
-    "ok":       "Number of items that are fully up to date.",
-    "outdated": "Number of items using an old version when a newer one exists.",
-    "missing":  "Number of items that point to something that can't be found.",
-    "invalid":  "Number of items using a version that was never published.",
+    "ok":       "Checks that passed: the newest version is being used.",
+    "outdated": "Checks that use an old version when a newer one exists.",
+    "missing":  "Checks that point to something that can't be found.",
+    "invalid":  "Checks that use a version that was never published.",
 }

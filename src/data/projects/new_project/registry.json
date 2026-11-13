@@ -141,9 +141,10 @@
               "status": "AVAILABLE",
               "published": "2026-05-05T10:00:00+00:00",
               "author": "k.tanaka",
-              "notes": "",
+              "notes": "Built from the sculpt component, which was never published for this asset.",
               "dependencies": {
-                "model": "v003"
+                "model": "v003",
+                "sculpt": "v002"
               }
             }
           }

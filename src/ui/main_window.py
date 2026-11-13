@@ -11,8 +11,12 @@ from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
 import qtawesome
 
 from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
+from collections import Counter
+
 from src.validator import (asset_validation, shot_validation, asset_issue_count,
-                           shot_issue_count, overall_status, RESULT_OK)
+                           shot_issue_count, overall_status, asset_result_counts,
+                           shot_result_counts, RESULT_OK, RESULT_OUTDATED,
+                           RESULT_MISSING, RESULT_INVALID)
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -128,14 +132,13 @@ class MainWindow(QMainWindow):
         validation_layout.addWidget(self.line_creation(QFrame.Shape.VLine))
 
         # adding Comboboxes 
-        self.project_type_layout, self.project_name_combobox = self.combobox_build("Project", get_all_folder_list())
+        self.project_type_layout, self.project_name_combobox, _ = self.combobox_build("Project", get_all_folder_list())
         self.project_name_combobox.setToolTip("Choose the project to check.\n"
                                               "The table below reloads with that project's items.")
         validation_layout.addLayout(self.project_type_layout, 1)
 
-        self.asset_type_layout, self.asset_type_combobox = self.combobox_build("Asset Type", self.get_asset_types())
         # keep the label so its text can change with the mode
-        self.asset_type_label = self.asset_type_layout.itemAt(0).widget()
+        self.asset_type_layout, self.asset_type_combobox, self.asset_type_label = self.combobox_build("Asset Type", self.get_asset_types())
         validation_layout.addLayout(self.asset_type_layout, 1)
         
         validation_layout.addWidget(self.line_creation(QFrame.Shape.VLine))
@@ -310,8 +313,12 @@ class MainWindow(QMainWindow):
 
         row = self.details_table_widget.currentRow()
         cols = MODE_LABELS[self.current_mode]
-        asset_name = self.details_table_widget.item(row, cols["name_col"]).text()
-        asset_type = self.details_table_widget.item(row, cols["type_col"]).text()
+        name_item = self.details_table_widget.item(row, cols["name_col"])
+        type_item = self.details_table_widget.item(row, cols["type_col"])
+        if name_item is None or type_item is None:
+            return
+        asset_name = name_item.text()
+        asset_type = type_item.text()
         # same OK / FAILED that populate_table put in the row's status badge
         status_item = self.details_table_widget.item(row, 3)
         asset_status = status_item.data(Qt.ItemDataRole.UserRole) if status_item else ""
@@ -319,11 +326,11 @@ class MainWindow(QMainWindow):
         self.set_detail_status(asset_status)
 
         if self.current_mode == MODE_SHOTS:
-            shot_file = self.details_table_widget.item(row, cols["name_col"]).data(Qt.ItemDataRole.UserRole)
+            shot_file = name_item.data(Qt.ItemDataRole.UserRole)
             self.set_details_for_shot(project_name, shot_file)
             return
 
-        asset_id = self.details_table_widget.item(row, cols["name_col"]).data(Qt.ItemDataRole.UserRole)
+        asset_id = name_item.data(Qt.ItemDataRole.UserRole)
         self.populate_updates_details_info(asset_name,project_name, asset_type)
         self.set_details_report_for_asset(project_name, asset_id)
 
@@ -455,7 +462,7 @@ class MainWindow(QMainWindow):
         box.addWidget(label)
         box.addWidget(combo)
 
-        return box, combo
+        return box, combo, label
 
     def set_status_badge(self, table, row, column, status):
         # a table item can't draw a box, so the cell holds a QLabel styled like detail_status
@@ -499,16 +506,21 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(18, 10, 18, 10)
         validation_label = QLabel("Validation Summary")
         validation_label.setObjectName("panelTitle")
-        validation_label.setToolTip("How many items are in each state.")
+        validation_label.setToolTip("Totals for the rows shown in the table below.\n"
+                                    "Each part checked counts once, so OUTDATED + MISSING + INVALID\n"
+                                    "adds up to the ISSUES column.")
         layout.addWidget(validation_label) 
+        # (icon, colour, result counted, style/tooltip key); numbers are filled by update_summary
         values = [
-            ("mdi.check-circle", "#23d47b", "124", "OK", "ok"),
-            ("mdi.clock-alert",    "#ffad22", "18",  "OUTDATED", "outdated"),
-            ("mdi.close-circle",   "#ff4f56", "7",   "MISSING",  "missing"),
-            ("mdi.alert-octagon",  "#7c9fc4", "2",   "INVALID",  "invalid"),
+            ("mdi.check-circle",  "#23d47b", RESULT_OK,       "ok"),
+            ("mdi.clock-alert",   "#ffad22", RESULT_OUTDATED, "outdated"),
+            ("mdi.close-circle",  "#ff4f56", RESULT_MISSING,  "missing"),
+            ("mdi.alert-octagon", "#7c9fc4", RESULT_INVALID,  "invalid"),
         ]
+        # result -> its number label, so update_summary can change the count
+        self.summary_numbers = {}
 
-        for i, (icon_name, color, number, label, state) in enumerate(values):
+        for i, (icon_name, color, label, state) in enumerate(values):
             item = QWidget()
             item.setObjectName("summaryItem")
             item.setToolTip(SUMMARY_TOOLTIPS[state])
@@ -520,8 +532,9 @@ class MainWindow(QMainWindow):
             icon_label.setObjectName("summaryIcon_" + state)
             icon_label.setPixmap(qtawesome.icon(icon_name, color=color).pixmap(24, 24))
 
-            number_label = QLabel(number)
+            number_label = QLabel("0")
             number_label.setObjectName("summaryNumber")
+            self.summary_numbers[label] = number_label
 
             text = QLabel(label)
             text.setObjectName("summaryLabel")
@@ -544,6 +557,11 @@ class MainWindow(QMainWindow):
                 layout.addWidget(line)
 
         return frame
+
+    def update_summary(self, counts):
+        """Show how many checks ended in each result. counts: {result: number}."""
+        for result, number_label in self.summary_numbers.items():
+            number_label.setText(str(counts.get(result, 0)))
 
     def line_creation(self, line_type):
             line = QFrame()
@@ -590,25 +608,31 @@ class MainWindow(QMainWindow):
         project_name = self.project_name_combobox.currentText()
         selected_type = self.asset_type_combobox.currentText()
 
-        # (name, type, key, issues) per row: type is the asset type or the sequence,
+        # (name, type, key, issues, result counts) per row: type is the asset type or the sequence,
         rows = []
         if self.current_mode == MODE_SHOTS:
             for shot_file in get_shot_files(project_name):
                 shot_data = load_json(shot_file)
-                issues = shot_issue_count(shot_validation(project_name, shot_file))
-                rows.append((shot_data["name"], shot_data["sequence"], str(shot_file), issues))
+                shot_report = shot_validation(project_name, shot_file)
+                rows.append((shot_data["name"], shot_data["sequence"], str(shot_file),
+                             shot_issue_count(shot_report), shot_result_counts(shot_report)))
         else:
             registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
             # one pass over the registry validates every asset
             asset_reports = asset_validation(project_name)
             for asset_id in registry_data["assets"]:
-                issues = asset_issue_count(asset_reports[asset_id])
                 rows.append((registry_data["assets"][asset_id]["name"],
-                             registry_data["assets"][asset_id]["type"], asset_id, issues))
+                             registry_data["assets"][asset_id]["type"], asset_id,
+                             asset_issue_count(asset_reports[asset_id]),
+                             asset_result_counts(asset_reports[asset_id])))
 
-        for asset_name, asset_type, row_key, issues in rows:
+        # summary totals cover only the rows that pass the filter, i.e. what the table shows
+        summary_counts = Counter()
+
+        for asset_name, asset_type, row_key, issues, result_counts in rows:
             if selected_type != "All" and asset_type != selected_type:
                 continue
+            summary_counts.update(result_counts)
 
         # for asset_name, asset_type, status, issues in self.assets:
 
@@ -637,6 +661,7 @@ class MainWindow(QMainWindow):
             self.details_table_widget.setItem(row , 4 ,asset_issues_item)
 
         self.details_table_widget.setSortingEnabled(True)
+        self.update_summary(summary_counts)
 
     def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
 

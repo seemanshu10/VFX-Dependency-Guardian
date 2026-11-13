@@ -6,6 +6,7 @@ Two tiers, each with its own idea of "latest":
 - Assets are checked against registry.json: is each component built on the
   latest version of its upstream components?
 """
+from collections import Counter
 from pathlib import Path
 
 from src.data_loader import load_json, json_file_find_path, get_project_folder
@@ -83,8 +84,11 @@ def shot_validation(project_name, shot_file) -> dict:
 
 def get_asset_latest_map(asset_data) -> dict:
     """{component: latest version} for one asset."""
-    return {component: get_latest_version(asset_data, component)[0]
-            for component in asset_data["components"]}
+    latest_map = {}
+    for component in asset_data["components"]:
+        latest_version, _status = get_latest_version(asset_data, component)
+        latest_map[component] = latest_version
+    return latest_map
 
 
 def compare_asset_components(asset_data) -> dict:
@@ -124,8 +128,10 @@ def asset_validation(project_name, asset_name=None) -> dict:
     if asset_name is not None:
         registry_assets = {asset_name: registry_assets[asset_name]}
 
-    return {name: compare_asset_components(asset_data)
-            for name, asset_data in registry_assets.items()}
+    report = {}
+    for name, asset_data in registry_assets.items():
+        report[name] = compare_asset_components(asset_data)
+    return report
 
 
 # ------------------------------------------------------------------------
@@ -133,18 +139,40 @@ def asset_validation(project_name, asset_name=None) -> dict:
 # ------------------------------------------------------------------------
 
 def shot_issue_count(shot_report) -> int:
-    return sum(1
-               for components in shot_report.values()
-               for result in components.values()
-               if result["result"] != RESULT_OK)
+    issues = 0
+    for components in shot_report.values():
+        for result in components.values():
+            if result["result"] != RESULT_OK:
+                issues += 1
+    return issues
 
 
 def asset_issue_count(asset_report) -> int:
     """Issues for ONE asset's component report."""
-    return sum(1
-               for result in asset_report.values()
-               for edge in result["dependencies"].values()
-               if edge["result"] != RESULT_OK)
+    issues = 0
+    for result in asset_report.values():
+        for edge in result["dependencies"].values():
+            if edge["result"] != RESULT_OK:
+                issues += 1
+    return issues
+
+
+def shot_result_counts(shot_report) -> Counter:
+    """How many of ONE shot's component checks ended in each result (OK, OUTDATED, ...)."""
+    counts = Counter()
+    for components in shot_report.values():
+        for result in components.values():
+            counts[result["result"]] += 1
+    return counts
+
+
+def asset_result_counts(asset_report) -> Counter:
+    """How many of ONE asset's dependency checks ended in each result. Root components have no check."""
+    counts = Counter()
+    for result in asset_report.values():
+        for edge in result["dependencies"].values():
+            counts[edge["result"]] += 1
+    return counts
 
 
 def overall_status(issue_count) -> str:
