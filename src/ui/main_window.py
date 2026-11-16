@@ -1,8 +1,9 @@
 """Main Entry Point For UI"""
+from datetime import datetime
 from pathlib import Path
 
 from PySide6 import QtWidgets
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem)
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox)
 from PySide6.QtCore import Qt, Slot, QSize
 
 from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
@@ -142,14 +143,14 @@ class MainWindow(QMainWindow):
         validation_layout.addLayout(self.asset_type_layout, 1)
         
         validation_layout.addWidget(self.line_creation(QFrame.Shape.VLine))
-        run_btn = QPushButton("Generate Validation Report")
-        run_btn.setIcon(qtawesome.icon('mdi.export', color = 'black'))
-        run_btn.setObjectName("runButton")
-        run_btn.setToolTip("Create a report listing everything that is out of date or broken\n"
+        self.run_btn = QPushButton("Generate Validation Report")
+        self.run_btn.setIcon(qtawesome.icon('mdi.export', color = 'black'))
+        self.run_btn.setObjectName("runButton")
+        self.run_btn.setToolTip("Create a report listing everything that is out of date or broken\n"
                            "for the items chosen in Validation Scope.")
-        validation_layout.addWidget(run_btn)
-        run_btn.setMinimumWidth(174)
-        run_btn.setMinimumHeight(44)
+        validation_layout.addWidget(self.run_btn)
+        self.run_btn.setMinimumWidth(174)
+        self.run_btn.setMinimumHeight(44)
         layout_main.addWidget(validation_frame)
 
         layout_main.addWidget(self.create_summary())
@@ -160,6 +161,7 @@ class MainWindow(QMainWindow):
         # connected last: the handler touches the table and details panel built above
         self.project_name_combobox.currentTextChanged.connect(self.on_project_changed)
         self.asset_type_combobox.currentTextChanged.connect(self.on_asset_type_changed)
+        self.run_btn.clicked.connect(self.detail_report_for_asset)
 
     # ------------------------------------------------------------------------
     #  Results
@@ -216,11 +218,14 @@ class MainWindow(QMainWindow):
 
         # Sort indicator 
         header.setSortIndicatorShown(False)
-        header.sortIndicatorChanged.connect(self.update_sort_arrow)
+        # header.sortIndicatorChanged.connect(self.update_sort_arrow)
 
         frame_layout.addLayout(top_layout)
         frame_layout.addWidget(self.details_table_widget, 1)
 
+        # search bar call 
+        self.search_box.textChanged.connect(self.apply_search_filter)
+        
         # signals Call 
         self.details_table_widget.itemSelectionChanged.connect(self.update_details)
         return frame_results
@@ -345,6 +350,24 @@ class MainWindow(QMainWindow):
                     # f"Path:  /shots/{Path(shot_file).name}"
                 )
 
+        deps, report = self.build_shot_report(project_name, shot_file)
+
+        self.dependency_table_widget.setRowCount(0)
+        for asset, component, current, expected, status in deps:
+            row = self.dependency_table_widget.rowCount()
+            self.dependency_table_widget.insertRow(row)
+
+            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(f"{asset} / {component}"))
+            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
+            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
+            self.set_status_badge(self.dependency_table_widget, row, 3, status)
+
+        self.report.setPlainText(report)
+
+    def build_shot_report(self, project_name, shot_file):
+        """Return (deps, report text) for one shot. Shared by the details panel and the export."""
+        shot_data = load_json(shot_file)
+
         # shot tier: expected = highest version in the asset's package JSON, whatever its status
         deps = []
         for asset, components in shot_data["packages"].items():
@@ -367,18 +390,8 @@ class MainWindow(QMainWindow):
                     status = "OUTDATED"
                 deps.append((asset, component, current, expected, status))
 
-        self.dependency_table_widget.setRowCount(0)
         report_lines = []
-
         for asset, component, current, expected, status in deps:
-            row = self.dependency_table_widget.rowCount()
-            self.dependency_table_widget.insertRow(row)
-
-            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(f"{asset} / {component}"))
-            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
-            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
-            self.set_status_badge(self.dependency_table_widget, row, 3, status)
-
             if status != "OK":
                 report_lines.append(
                     f" - {asset} / {component}:\n"
@@ -398,9 +411,25 @@ class MainWindow(QMainWindow):
         else:
             report += "All packages match the latest published versions."
 
-        self.report.setPlainText(report)
+        return deps, report
 
     def set_details_report_for_asset(self, project_name, asset):
+        deps, report = self.build_asset_report(project_name, asset)
+
+        self.dependency_table_widget.setRowCount(0)
+        for component, current, expected, status in deps:
+            row = self.dependency_table_widget.rowCount()
+            self.dependency_table_widget.insertRow(row)
+
+            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(component))
+            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
+            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
+            self.set_status_badge(self.dependency_table_widget, row, 3, status)
+
+        self.report.setPlainText(report)
+
+    def build_asset_report(self, project_name, asset):
+        """Return (deps, report text) for one asset. Shared by the details panel and the export."""
         # asset tier: each component's latest version, checked against the latest of its upstream
         asset_report = asset_validation(project_name, asset)[asset]
 
@@ -437,18 +466,7 @@ class MainWindow(QMainWindow):
         else:
             report += "Every component is built on the latest version of its upstream."
 
-        self.dependency_table_widget.setRowCount(0)
-
-        for component, current, expected, status in deps:
-            row = self.dependency_table_widget.rowCount()
-            self.dependency_table_widget.insertRow(row)
-
-            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(component))
-            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
-            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
-            self.set_status_badge(self.dependency_table_widget, row, 3, status)
-
-        self.report.setPlainText(report)
+        return deps, report
 
     def combobox_build(self, label_text, values):
         box = QVBoxLayout()
@@ -662,6 +680,25 @@ class MainWindow(QMainWindow):
 
         self.details_table_widget.setSortingEnabled(True)
         self.update_summary(summary_counts)
+        # keep the current search applied after the table is rebuilt
+        self.apply_search_filter(self.search_box.text())
+
+    @Slot()
+    def apply_search_filter(self, text):
+        """Hide rows whose name/type text doesn't contain the search text (case-insensitive)."""
+        search_text = text.strip().lower()
+        asset_table_rows = self.details_table_widget
+        for row in range(asset_table_rows.rowCount()):
+            if not search_text:
+                asset_table_rows.setRowHidden(row, False)
+                continue
+            match = False
+            for col in range(asset_table_rows.columnCount()):
+                item = asset_table_rows.item(row, col)
+                if item is not None and search_text in str(item.text()).lower():
+                    match = True
+                    break
+            asset_table_rows.setRowHidden(row, not match)
 
     def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
 
@@ -715,7 +752,7 @@ class MainWindow(QMainWindow):
         self.update_sort_arrow(header.sortIndicatorSection(), header.sortIndicatorOrder())
 
     def set_mode_tooltips(self, mode):
-        """Hover text for widgets whose meaning changes with the mode. Text lives in MODE_LABELS."""
+        """Hover text for widgets whose meaning changes with the mode. Text is in MODE_LABELS."""
         tips = MODE_LABELS[mode]["tooltips"]
 
         self.all_radio.setToolTip(tips["all_radio"])
@@ -756,6 +793,70 @@ class MainWindow(QMainWindow):
 
         # "All" added after sorting so it is always first
         return ["All"] + sorted(set(all_sequences))
+
+    # ------------------------------------------------------------------------
+    #  detail report 
+    # ------------------------------------------------------------------------
+    @Slot()
+    def detail_report_for_asset(self):
+        """Export the detailed report for the rows chosen in Validation Scope to a .txt file."""
+        project_name = self.project_name_combobox.currentText()
+        table = self.details_table_widget
+        cols = MODE_LABELS[self.current_mode]
+        visible_rows = [row for row in range(table.rowCount()) if not table.isRowHidden(row)]
+
+        if self.all_radio.isChecked():
+            rows = visible_rows
+        else:
+            # ticked checkboxes first; fall back to the highlighted rows
+            rows = [row for row in visible_rows
+                    if table.item(row, 0) and table.item(row, 0).checkState() == Qt.CheckState.Checked]
+            if not rows:
+                rows = sorted({index.row() for index in table.selectionModel().selectedRows()})
+
+        if not rows:
+            QMessageBox.information(self, "Validation Report",
+                                    "Nothing to export. Tick or select at least one row.")
+            return
+
+        sections = []
+        for row in rows:
+            name_item = table.item(row, cols["name_col"])
+            if name_item is None:
+                continue
+            row_key = name_item.data(Qt.ItemDataRole.UserRole)
+            if self.current_mode == MODE_SHOTS:
+                _, report = self.build_shot_report(project_name, row_key)
+            else:
+                _, report = self.build_asset_report(project_name, row_key)
+            sections.append(report)
+
+        mode_name = "shots" if self.current_mode == MODE_SHOTS else "assets"
+        header = (
+            f"VFX Dependency Guardian - Validation Report\n"
+            f"project:   {project_name}\n"
+            f"mode:      {mode_name}\n"
+            f"scope:     {'all' if self.all_radio.isChecked() else 'selected'} ({len(sections)} items)\n"
+            f"generated: {datetime.now():%Y-%m-%d %H:%M:%S}\n"
+        )
+        separator = "\n" + "=" * 60 + "\n\n"
+        text = header + separator + separator.join(sections) + "\n"
+
+        default_name = f"{project_name}_{mode_name}_validation_{datetime.now():%Y%m%d_%H%M%S}.txt"
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Validation Report",
+                                                   str(Path.home() / default_name),
+                                                   "Text files (*.txt)")
+        if not file_path:
+            return
+
+        try:
+            Path(file_path).write_text(text, encoding="utf-8")
+        except OSError as error:
+            QMessageBox.warning(self, "Validation Report", f"Could not save the report:\n{error}")
+            return
+
+        QMessageBox.information(self, "Validation Report",
+                                f"Report for {len(sections)} items saved to:\n{file_path}")
 
     # ------------------------------------------------------------------------
     #  Styling
