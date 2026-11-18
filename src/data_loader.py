@@ -6,7 +6,6 @@ from pathlib import Path
 
 DATA_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
 PROJECTS_DIR = DATA_DIR / "src" / "data" / "projects"
-# print(DATA_DIR)
 
 def load_json(path: Path) -> dict:
     """Load and parse a single JSON file. Raises on missing file or bad JSON,
@@ -36,7 +35,6 @@ def get_all_folder_list():
     for project_name in os.listdir(PROJECTS_DIR):
         if (PROJECTS_DIR / project_name).is_dir():
             project_folder_names.append(project_name)
-    # print (sorted(project_folder_names))
 
     return sorted(project_folder_names)
 

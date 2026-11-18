@@ -1,11 +1,7 @@
 # ── App window ────────────────────────────────────────────────────────────────
-APP_TITLE     = "VFX Dependency Gaurdian"
+APP_TITLE     = "VFX Dependency Guardian"
 WINDOW_WIDTH  = 1200
 WINDOW_HEIGHT = 900
-
-
-
-ASSET_TYPE = ["All", "Character", "Prop", "Environment", "FX"]
 
 # ── Mode labels ───────────────────────────────────────────────────────────────
 # Text that changes when switching between the Assets and Shots tabs

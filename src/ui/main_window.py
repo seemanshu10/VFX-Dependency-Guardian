@@ -6,11 +6,10 @@ from PySide6 import QtWidgets
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QRadioButton, QComboBox, QSplitter, QLineEdit, QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox)
 from PySide6.QtCore import Qt, Slot, QSize
 
-from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH, ASSET_TYPE,
+from src.constants import (APP_TITLE, WINDOW_HEIGHT, WINDOW_WIDTH,
                            MODE_ASSETS, MODE_SHOTS, MODE_LABELS,
                            STATUS_TOOLTIPS, SUMMARY_TOOLTIPS)
 import qtawesome
-
 from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
 from collections import Counter
 
@@ -21,12 +20,10 @@ from src.validator import (asset_validation, shot_validation, asset_issue_count,
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
-
 class StatusItem(QTableWidgetItem):
     """Text-less item under a status badge. Holds the status in UserRole and sorts by it."""
     def __lt__(self, other):
         return (self.data(Qt.ItemDataRole.UserRole) or "") < (other.data(Qt.ItemDataRole.UserRole) or "")
-
 
 class MainWindow(QMainWindow):
     """Main Apllication window interfaces"""
@@ -38,17 +35,6 @@ class MainWindow(QMainWindow):
         #set window Size and Properties 
         self.setWindowTitle(APP_TITLE)
         self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
-        # self.assets = [
-        #                 ("character_A", "Character", "FAILED", 3),
-        #                 ("character_B", "Character", "OK", 0),
-        #                 ("prop_car", "Prop", "OUTDATED", 1),
-        #                 ("environment_01", "Environment", "OK", 0),
-        #                 ("vehicle_ship", "Vehicle", "FAILED", 2),
-        #                 ("set_building", "Set", "OUTDATED", 1),
-        #                 ("tree_grp", "Vegetation", "OK", 0),
-        #                 ("fx_smoke", "FX", "INVALID", 1),
-        #             ]
-
         
         # set before create_header: the filter combo and table read it
         self.current_mode = MODE_ASSETS
@@ -61,14 +47,8 @@ class MainWindow(QMainWindow):
         self.apply_style()
         self.populate_table()
         self.set_mode_tooltips(self.current_mode)
-        # self.get_asset_types()
 
     def create_header(self):
-        # create menu BAr
-        # menubar = self.menuBar()
-        # # file Menu 
-        # file_menu = menubar.addAction("File")
-
         layout_main = QVBoxLayout(self.central_widget)
 
         main_title = QLabel("Dependency Validator")
@@ -120,13 +100,11 @@ class MainWindow(QMainWindow):
         radio_box = QHBoxLayout()
         self.all_radio = QRadioButton("All Assets")
         self.selected_radio = QRadioButton("Selected Assets")
-        # self.single_radio = QRadioButton("Single Asset")
 
         self.all_radio.setChecked(True)
         validation_scope_main_box.addWidget(scope_label)
         radio_box.addWidget(self.all_radio)
         radio_box.addWidget(self.selected_radio)
-        # radio_box.addWidget(self.single_radio)
         validation_scope_main_box.addLayout(radio_box)
 
         validation_layout.addLayout(validation_scope_main_box, 0)
@@ -161,7 +139,7 @@ class MainWindow(QMainWindow):
         # connected last: the handler touches the table and details panel built above
         self.project_name_combobox.currentTextChanged.connect(self.on_project_changed)
         self.asset_type_combobox.currentTextChanged.connect(self.on_asset_type_changed)
-        self.run_btn.clicked.connect(self.detail_report_for_asset)
+        self.run_btn.clicked.connect(self.detail_report_for_export)
 
     # ------------------------------------------------------------------------
     #  Results
@@ -257,8 +235,6 @@ class MainWindow(QMainWindow):
         header.addWidget(self.detail_name)
         header.addStretch()
         header.addWidget(self.detail_status)
-        self.asset_type_text = "Character"
-        # self.project_name_combobox = "Demo Project"
         self.info = QtWidgets.QLabel()
         self.info.setObjectName("detailInfo")
 
@@ -305,13 +281,11 @@ class MainWindow(QMainWindow):
         self.report.setToolTip("A plain-text summary of the problems found for this item.\n"
                                "You can select and copy it.")
         details_main_layout.addWidget(self.report, 1)
-
         return frame
 
     @Slot()
     def update_details(self) -> None:
         project_name = self.project_name_combobox.currentText()
-        # print(project_name)
         selected_asset = self.details_table_widget.selectedItems()
         if not selected_asset:
             return
@@ -531,8 +505,8 @@ class MainWindow(QMainWindow):
         # (icon, colour, result counted, style/tooltip key); numbers are filled by update_summary
         values = [
             ("mdi.check-circle",  "#23d47b", RESULT_OK,       "ok"),
-            ("mdi.clock-alert",   "#ffad22", RESULT_OUTDATED, "outdated"),
-            ("mdi.close-circle",  "#ff4f56", RESULT_MISSING,  "missing"),
+            ("mdi.clock-alert",   "#ff4f56", RESULT_OUTDATED, "outdated"),
+            ("mdi.close-circle",  "#ffad22", RESULT_MISSING,  "missing"),
             ("mdi.alert-octagon", "#7c9fc4", RESULT_INVALID,  "invalid"),
         ]
         # result -> its number label, so update_summary can change the count
@@ -741,12 +715,10 @@ class MainWindow(QMainWindow):
 
         self.all_radio.setText(labels["all_radio"])
         self.selected_radio.setText(labels["selected_radio"])
-        # self.single_radio.setText(labels["single_radio"])
         self.asset_type_label.setText(labels["type_filter"])
         self.search_box.setPlaceholderText(labels["search"])
         self.set_mode_tooltips(mode)
 
-        # re-apply through update_sort_arrow so the ▲/▼ stays on the sorted column
         self.details_header_labels = list(labels["table_headers"])
         header = self.details_table_widget.horizontalHeader()
         self.update_sort_arrow(header.sortIndicatorSection(), header.sortIndicatorOrder())
@@ -779,8 +751,6 @@ class MainWindow(QMainWindow):
 
             all_asset_type.append(asset_type)
 
-        # print(list(sorted(set(all_asset_type))))
-        # "All" added after sorting so it is always first
         return ["All"] + sorted(set(all_asset_type))
 
     def get_sequences(self):
@@ -798,7 +768,7 @@ class MainWindow(QMainWindow):
     #  detail report 
     # ------------------------------------------------------------------------
     @Slot()
-    def detail_report_for_asset(self):
+    def detail_report_for_export(self):
         """Export the detailed report for the rows chosen in Validation Scope to a .txt file."""
         project_name = self.project_name_combobox.currentText()
         table = self.details_table_widget
