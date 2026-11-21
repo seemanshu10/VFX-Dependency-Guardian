@@ -13,10 +13,9 @@ import qtawesome
 from src.data_loader import load_json, json_file_find_path, get_all_folder_list, get_project_folder, get_shot_files
 from collections import Counter
 
-from src.validator import (asset_validation, shot_validation, asset_issue_count,
-                           shot_issue_count, overall_status, asset_result_counts,
-                           shot_result_counts, RESULT_OK, RESULT_OUTDATED,
-                           RESULT_MISSING, RESULT_INVALID)
+from src.validator import RESULT_OK, RESULT_OUTDATED, RESULT_MISSING, RESULT_INVALID
+from src.report import (asset_summaries, shot_summaries, build_asset_report,
+                        build_shot_report, build_export_text)
 
 STYLE_FILE = Path(__file__).parent / "styles" / "main_window.qss"
 
@@ -291,107 +290,29 @@ class MainWindow(QMainWindow):
             return
 
         row = self.details_table_widget.currentRow()
-        cols = MODE_LABELS[self.current_mode]
-        name_item = self.details_table_widget.item(row, cols["name_col"])
-        type_item = self.details_table_widget.item(row, cols["type_col"])
-        if name_item is None or type_item is None:
+        name_item = self.details_table_widget.item(row, MODE_LABELS[self.current_mode]["name_col"])
+        if name_item is None:
             return
-        asset_name = name_item.text()
-        asset_type = type_item.text()
-        # same OK / FAILED that populate_table put in the row's status badge
-        status_item = self.details_table_widget.item(row, 3)
-        asset_status = status_item.data(Qt.ItemDataRole.UserRole) if status_item else ""
-        self.detail_name.setText(asset_name)
-        self.set_detail_status(asset_status)
+        # asset id or shot file, stored by populate_table
+        row_key = name_item.data(Qt.ItemDataRole.UserRole)
 
+        report = self.build_report(project_name, row_key)
+        self.detail_name.setText(name_item.text())
+        self.set_detail_status(report.status)
+        self.show_report(report)
+
+    def build_report(self, project_name, row_key):
+        """ItemReport for one row of the results table, in the current mode."""
         if self.current_mode == MODE_SHOTS:
-            shot_file = name_item.data(Qt.ItemDataRole.UserRole)
-            self.set_details_for_shot(project_name, shot_file)
-            return
+            return build_shot_report(project_name, row_key)
+        return build_asset_report(project_name, row_key)
 
-        asset_id = name_item.data(Qt.ItemDataRole.UserRole)
-        self.populate_updates_details_info(asset_name,project_name, asset_type)
-        self.set_details_report_for_asset(project_name, asset_id)
-
-    def set_details_for_shot(self, project_name, shot_file):
-        shot_data = load_json(shot_file)
-
-        self.info.setText(
-                    f"Sequence:  {shot_data['sequence']}\n"
-                    f"Project:  {project_name}\n"
-                    f"Build:  {shot_data['build']}\n"
-                    f"Author:  {shot_data['author']}\n"
-                    # f"Path:  /shots/{Path(shot_file).name}"
-                )
-
-        deps, report = self.build_shot_report(project_name, shot_file)
+    def show_report(self, report):
+        """Fill the details panel (info, dependency table, text report) from an ItemReport."""
+        self.info.setText("\n".join(f"{label}:  {value}" for label, value in report.info.items()))
 
         self.dependency_table_widget.setRowCount(0)
-        for asset, component, current, expected, status in deps:
-            row = self.dependency_table_widget.rowCount()
-            self.dependency_table_widget.insertRow(row)
-
-            self.dependency_table_widget.setItem(row, 0, QTableWidgetItem(f"{asset} / {component}"))
-            self.dependency_table_widget.setItem(row, 1, QTableWidgetItem(current))
-            self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
-            self.set_status_badge(self.dependency_table_widget, row, 3, status)
-
-        self.report.setPlainText(report)
-
-    def build_shot_report(self, project_name, shot_file):
-        """Return (deps, report text) for one shot. Shared by the details panel and the export."""
-        shot_data = load_json(shot_file)
-
-        # shot tier: expected = highest version in the asset's package JSON, whatever its status
-        deps = []
-        for asset, components in shot_data["packages"].items():
-            package_file = get_project_folder(project_name) / "assets" / asset / f"{asset}.json"
-            package_data = load_json(package_file) if package_file.exists() else {"components": {}}
-
-            for component, current in components.items():
-                if component not in package_data["components"]:
-                    deps.append((asset, component, current, "-", "MISSING"))
-                    continue
-
-                versions = package_data["components"][component]["versions"]
-                expected = max(versions, key=lambda version: int(version.lstrip("v")))
-
-                if current not in versions:
-                    status = "INVALID"
-                elif current == expected:
-                    status = "OK"
-                else:
-                    status = "OUTDATED"
-                deps.append((asset, component, current, expected, status))
-
-        report_lines = []
-        for asset, component, current, expected, status in deps:
-            if status != "OK":
-                report_lines.append(
-                    f" - {asset} / {component}:\n"
-                    f"     current:  {current}\n"
-                    f"     expected: {expected}\n"
-                    f"     status:   {status}\n"
-                )
-
-        shot_status = "FAILED" if report_lines else "OK"
-        report = (
-            f"shot:     {shot_data['shot']}\n"
-            f"project:  {project_name}\n"
-            f"status:   {shot_status}\n\n"
-        )
-        if report_lines:
-            report += "components:\n\n" + "\n".join(report_lines)
-        else:
-            report += "All packages match the latest published versions."
-
-        return deps, report
-
-    def set_details_report_for_asset(self, project_name, asset):
-        deps, report = self.build_asset_report(project_name, asset)
-
-        self.dependency_table_widget.setRowCount(0)
-        for component, current, expected, status in deps:
+        for component, current, expected, status in report.rows:
             row = self.dependency_table_widget.rowCount()
             self.dependency_table_widget.insertRow(row)
 
@@ -400,47 +321,7 @@ class MainWindow(QMainWindow):
             self.dependency_table_widget.setItem(row, 2, QTableWidgetItem(expected))
             self.set_status_badge(self.dependency_table_widget, row, 3, status)
 
-        self.report.setPlainText(report)
-
-    def build_asset_report(self, project_name, asset):
-        """Return (deps, report text) for one asset. Shared by the details panel and the export."""
-        # asset tier: each component's latest version, checked against the latest of its upstream
-        asset_report = asset_validation(project_name, asset)[asset]
-
-        # (component, current, expected, status) per row; current = upstream version it was built on
-        deps = []
-        report_lines = []
-        for component, result in asset_report.items():
-            if not result["dependencies"]:
-                # root component (e.g. model): nothing upstream to be out of date with
-                deps.append((f"{component} ", result["version"], result["version"], RESULT_OK))
-                continue
-
-            for dep_component, edge in result["dependencies"].items():
-                expected = edge["latest_available"] or "-"
-                deps.append((f"{component} ",
-                             edge["built_on"], expected, edge["result"]))
-
-                if edge["result"] != RESULT_OK:
-                    report_lines.append(
-                        f" - {component}  / {dep_component}:\n"
-                        f"     built on: {edge['built_on']}\n"
-                        f"     latest:   {expected}\n"
-                        f"     status:   {edge['result']}\n"
-                    )
-
-        asset_status = "FAILED" if report_lines else "OK"
-        report = (
-            f"asset:    {asset}\n"
-            f"project:  {project_name}\n"
-            f"status:   {asset_status}\n\n"
-        )
-        if report_lines:
-            report += "dependencies:\n\n" + "\n".join(report_lines)
-        else:
-            report += "Every component is built on the latest version of its upstream."
-
-        return deps, report
+        self.report.setPlainText(report.text)
 
     def combobox_build(self, label_text, values):
         box = QVBoxLayout()
@@ -600,33 +481,19 @@ class MainWindow(QMainWindow):
         project_name = self.project_name_combobox.currentText()
         selected_type = self.asset_type_combobox.currentText()
 
-        # (name, type, key, issues, result counts) per row: type is the asset type or the sequence,
-        rows = []
+        # one ItemSummary per row: group is the asset type or the sequence
         if self.current_mode == MODE_SHOTS:
-            for shot_file in get_shot_files(project_name):
-                shot_data = load_json(shot_file)
-                shot_report = shot_validation(project_name, shot_file)
-                rows.append((shot_data["name"], shot_data["sequence"], str(shot_file),
-                             shot_issue_count(shot_report), shot_result_counts(shot_report)))
+            summaries = shot_summaries(project_name)
         else:
-            registry_data = load_json(json_file_find_path("registry", get_project_folder(project_name)))
-            # one pass over the registry validates every asset
-            asset_reports = asset_validation(project_name)
-            for asset_id in registry_data["assets"]:
-                rows.append((registry_data["assets"][asset_id]["name"],
-                             registry_data["assets"][asset_id]["type"], asset_id,
-                             asset_issue_count(asset_reports[asset_id]),
-                             asset_result_counts(asset_reports[asset_id])))
+            summaries = asset_summaries(project_name)
 
         # summary totals cover only the rows that pass the filter, i.e. what the table shows
         summary_counts = Counter()
 
-        for asset_name, asset_type, row_key, issues, result_counts in rows:
-            if selected_type != "All" and asset_type != selected_type:
+        for summary in summaries:
+            if selected_type != "All" and summary.group != selected_type:
                 continue
-            summary_counts.update(result_counts)
-
-        # for asset_name, asset_type, status, issues in self.assets:
+            summary_counts.update(summary.counts)
 
             row = self.details_table_widget.rowCount()
             self.details_table_widget.insertRow(row)
@@ -637,19 +504,19 @@ class MainWindow(QMainWindow):
             check_box.setCheckState(Qt.CheckState.Unchecked)
             self.details_table_widget.setItem(row, 0, check_box)
 
-            asset_name_item = QTableWidgetItem(asset_name)
+            asset_name_item = QTableWidgetItem(summary.name)
             # remember the shot file / asset id, so the details panel can load it
-            asset_name_item.setData(Qt.ItemDataRole.UserRole, row_key)
-            asset_type_item = QTableWidgetItem(asset_type)
+            asset_name_item.setData(Qt.ItemDataRole.UserRole, summary.key)
+            asset_type_item = QTableWidgetItem(summary.group)
             # int, not str, so the column sorts 2 < 10
             asset_issues_item = QTableWidgetItem()
-            asset_issues_item.setData(Qt.ItemDataRole.DisplayRole, issues)
+            asset_issues_item.setData(Qt.ItemDataRole.DisplayRole, summary.issues)
             asset_issues_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
             cols = MODE_LABELS[self.current_mode]
             self.details_table_widget.setItem(row , cols["name_col"] ,asset_name_item)
             self.details_table_widget.setItem(row , cols["type_col"] ,asset_type_item)
-            self.set_status_badge(self.details_table_widget, row, 3, overall_status(issues))
+            self.set_status_badge(self.details_table_widget, row, 3, summary.status)
             self.details_table_widget.setItem(row , 4 ,asset_issues_item)
 
         self.details_table_widget.setSortingEnabled(True)
@@ -673,14 +540,6 @@ class MainWindow(QMainWindow):
                     match = True
                     break
             asset_table_rows.setRowHidden(row, not match)
-
-    def populate_updates_details_info(self, asset_name, project_name, asset_type_text):
-
-        self.info.setText(
-                    f"Type:  {asset_type_text}\n"
-                    f"Project:  {project_name}\n"
-                    f"Path:  /assets/{asset_type_text}/{asset_name}"
-                )
 
     @Slot(int, Qt.SortOrder)
     def update_sort_arrow(self, column, order):
@@ -780,7 +639,8 @@ class MainWindow(QMainWindow):
         else:
             # ticked checkboxes first; fall back to the highlighted rows
             rows = [row for row in visible_rows
-                    if table.item(row, 0) and table.item(row, 0).checkState() == Qt.CheckState.Checked]
+                    if (item := table.item(row, 0)) is not None
+                    and item.checkState() == Qt.CheckState.Checked]
             if not rows:
                 rows = sorted({index.row() for index in table.selectionModel().selectedRows()})
 
@@ -789,28 +649,16 @@ class MainWindow(QMainWindow):
                                     "Nothing to export. Tick or select at least one row.")
             return
 
-        sections = []
+        reports = []
         for row in rows:
             name_item = table.item(row, cols["name_col"])
             if name_item is None:
                 continue
-            row_key = name_item.data(Qt.ItemDataRole.UserRole)
-            if self.current_mode == MODE_SHOTS:
-                _, report = self.build_shot_report(project_name, row_key)
-            else:
-                _, report = self.build_asset_report(project_name, row_key)
-            sections.append(report)
+            reports.append(self.build_report(project_name, name_item.data(Qt.ItemDataRole.UserRole)))
 
         mode_name = "shots" if self.current_mode == MODE_SHOTS else "assets"
-        header = (
-            f"VFX Dependency Guardian - Validation Report\n"
-            f"project:   {project_name}\n"
-            f"mode:      {mode_name}\n"
-            f"scope:     {'all' if self.all_radio.isChecked() else 'selected'} ({len(sections)} items)\n"
-            f"generated: {datetime.now():%Y-%m-%d %H:%M:%S}\n"
-        )
-        separator = "\n" + "=" * 60 + "\n\n"
-        text = header + separator + separator.join(sections) + "\n"
+        scope = "all" if self.all_radio.isChecked() else "selected"
+        text = build_export_text(project_name, mode_name, scope, reports)
 
         default_name = f"{project_name}_{mode_name}_validation_{datetime.now():%Y%m%d_%H%M%S}.txt"
         file_path, _ = QFileDialog.getSaveFileName(self, "Save Validation Report",
@@ -826,7 +674,7 @@ class MainWindow(QMainWindow):
             return
 
         QMessageBox.information(self, "Validation Report",
-                                f"Report for {len(sections)} items saved to:\n{file_path}")
+                                f"Report for {len(reports)} items saved to:\n{file_path}")
 
     # ------------------------------------------------------------------------
     #  Styling
@@ -838,5 +686,3 @@ class MainWindow(QMainWindow):
             print(f"Stylesheet not found: {STYLE_FILE}")
             return
         self.setStyleSheet(STYLE_FILE.read_text(encoding="utf-8"))
-
-    
